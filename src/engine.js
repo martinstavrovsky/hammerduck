@@ -449,7 +449,10 @@ function updatePlayer(dt) {
 
   const wasGround = P.onGround, fallV = P.vy;
   P.prevBottom = P.y + P.h;
+  const ext = P.extVx || 0; P.extVx = 0; // e.g. wind gusts
+  P.vx += ext;
   moveBody(P, dt);
+  if (P.hitL || P.hitR) P.vx = 0; else P.vx -= ext;
   if (P.hitHead) P.springBoost = false;
 
   // moving platforms
@@ -951,6 +954,14 @@ function drawDuck(o) {
     ctx.beginPath(); ctx.arc(6, -45, 12, Math.PI, 0); ctx.closePath(); ctx.fill(); ctx.stroke();
     ctx.beginPath(); ctx.ellipse(18, -45, 10, 3, 0, 0, 7); ctx.fill(); ctx.stroke();
     ell(6, -57, 2.5, 2.5, '#ffd23f', OUT, 1.5);
+  } else if (o.acc === 'beanie') {
+    ctx.fillStyle = '#2fbf71'; ctx.strokeStyle = OUT; ctx.lineWidth = 2.5;
+    ctx.beginPath(); ctx.arc(6, -45, 13, Math.PI, 0); ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.roundRect(-8, -48, 28, 6, 3); ctx.fill(); ctx.stroke();
+    ell(6, -60, 5, 5, '#ffffff', OUT, 2);
+  } else if (o.acc === 'earmuffs') {
+    ctx.strokeStyle = '#ff5fa2'; ctx.lineWidth = 3.5; ctx.beginPath(); ctx.arc(6, -41, 15, Math.PI * 1.1, Math.PI * 1.9); ctx.stroke();
+    ell(-6, -38, 5.5, 6.5, '#ff8fc4', OUT, 2);
   } else if (o.acc === 'bow') {
     ctx.fillStyle = '#ff5fa2'; ctx.strokeStyle = OUT; ctx.lineWidth = 2;
     ctx.beginPath(); ctx.moveTo(0, -54); ctx.lineTo(-9, -60); ctx.lineTo(-9, -48); ctx.closePath(); ctx.fill(); ctx.stroke();
@@ -958,6 +969,13 @@ function drawDuck(o) {
   }
   ctx.restore();
   ctx.save(); ctx.translate(0, bodyDY);
+  if (o.scarf) { // cosy scarf around the neck
+    ctx.fillStyle = o.scarf; ctx.strokeStyle = OUT; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.roundRect(-9, -31, 28, 8, 4); ctx.fill(); ctx.stroke();
+    const fl = Math.sin(gT * 9) * 2;
+    ctx.beginPath(); ctx.roundRect(-11, -27 + fl * 0.3, 8, 16, 3); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = 'rgba(255,255,255,.5)'; ctx.fillRect(-5, -30, 3, 6); ctx.fillRect(5, -30, 3, 6);
+  }
   if (o.ham !== undefined && !hamBehind) drawHammer(o.ham);
   // wing
   const wa = o.ham !== undefined ? clamp(o.ham * 0.35, -0.6, 0.4) : (o.wave ? Math.sin(gT * 14) * 0.6 - 0.6 : 0);
@@ -993,12 +1011,12 @@ function drawPlayer() {
   let rot = 0;
   if (P.dead) rot = P.rot;
   else if (P.pound && P.poundT < 0.16) rot = -P.face * (P.poundT / 0.16) * Math.PI * 2;
-  else if (P.sliding) rot = P.face * 1.25;
+  else if (P.sliding) { rot = P.face * 0.35; ham = -0.45 + Math.sin(gT * 30) * 0.04; } // belly slide: lean forward, hammer out front
   const hop = (state === 'win' && P.vx === 0 && winT > 0.6) ? Math.abs(Math.sin(gT * 6)) * 16 : 0;
   drawDuck({ x: P.x + P.w / 2, y: P.y + P.h - hop, face: P.face, sx: P.sx * (1 - idleBob), sy: P.sy * (1 + idleBob), crouch: P.cv, scale: 1.12, run: P.run, moving: P.onGround && Math.abs(P.vx) > 20,
-    body: '#ffd23f', light: '#fff0a6', dark: '#f0b400', acc: 'bandana', ham, rot, dead: P.dead, blink: P.blink < 0 && !P.dead, determined: !P.dead && state === 'play', happy: state === 'win' && winT > 0.6 });
+    body: '#ffd23f', light: '#fff0a6', dark: '#f0b400', acc: 'bandana', scarf: WORLD.heroScarf, ham, rot, dead: P.dead, blink: P.blink < 0 && !P.dead, determined: !P.dead && state === 'play', happy: state === 'win' && winT > 0.6 });
 }
-function drawDuckling(x, y, face, hop, wave) {
+function drawDuckling(x, y, face, hop, wave, scarf) {
   ctx.save(); ctx.translate(x, y - hop); ctx.scale(face, 1);
   ell(-4, -2, 5, 2.5, '#ff8c1a', OUT, 1.8); ell(4, -2, 5, 2.5, '#ff8c1a', OUT, 1.8);
   ell(0, -11, 11, 9, '#ffe45c', OUT, 2.5);
@@ -1009,6 +1027,7 @@ function drawDuckling(x, y, face, hop, wave) {
   else { ell(8, -26, 2, 2.6, '#1a1a1a'); ell(8.5, -27, .8, .8, '#fff'); }
   ell(2, -20, 2.5, 1.5, 'rgba(255,110,110,.5)');
   ell(-3, -12, 6, 4, '#f5c932', OUT, 2, wave ? Math.sin(gT * 16) * 0.7 - 0.5 : 0);
+  if (scarf) { ctx.fillStyle = scarf; ctx.strokeStyle = OUT; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.roundRect(-3, -19, 16, 5, 2.5); ctx.fill(); ctx.stroke(); ctx.beginPath(); ctx.roundRect(-5, -17, 5, 9, 2); ctx.fill(); ctx.stroke(); }
   ctx.restore();
 }
 

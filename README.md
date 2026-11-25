@@ -1,12 +1,18 @@
-# 🦆🔨 Hammer Duck: Bug Island Rescue
+# 🦆🔨 Hammer Duck
 
-A colorful 2D platformer that runs in the browser. It's a lovely day on Duck Island until the Big Bug crashes in,
-stuffs Hammer Duck's whole family into a net and runs off yelling *"You'll NEVER catch me, HAMMER DUCK! Nyah nyah!"*
-Grab your huge wooden hammer, smash your way across the island, beat the Big Bug and get your family back!
+A colorful 2D platformer that runs in the browser, with **two worlds**.
+
+**World 1 · Duck Island ☀️:** It's a lovely day until the Big Bug crashes in, stuffs Hammer Duck's whole family
+into a net and runs off yelling *"You'll NEVER catch me, HAMMER DUCK! Nyah nyah!"* Grab your huge wooden hammer,
+smash your way across the island and get your family back!
+
+**World 2 · Frosty Isle ❄️:** Just as everyone is safe, an emergency pigeon brings a letter from Hammer Duck's
+little brother Drake: bugs are attacking his snowy island too! The Big Bug's big brother is waiting:
+*"So YOU'RE the duck who beat my little brother? HA! I'm the BIGGER BUG! You'll NEVER defeat ME!"*
 
 ![Title screen](docs/screenshots/title.png)
 
-The whole game is **one HTML file**: no install, no build step, no downloads. All graphics are drawn in code
+No install, no build step, no downloads: just open `index.html`. All graphics are drawn in code
 and all music and sound effects are generated live with the Web Audio API.
 
 ## ▶️ How to play
@@ -14,6 +20,7 @@ and all music and sound effects are generated live with the Web Audio API.
 1. Download or clone this repository.
 2. Open `index.html` in Safari, Chrome, Firefox or Edge (double-click it).
 3. Press **Enter** or **Space** to start. Press **F** (or double-click) to play in full screen.
+4. After finishing Duck Island once, press **2** on the title screen to fly straight to Frosty Isle.
 
 ## 🎮 Controls
 
@@ -25,51 +32,81 @@ and all music and sound effects are generated live with the Web Audio API.
 | Hammer **throw** (special) | **G** | □ / X |
 | Hammer **slam** (in the air) | **J** or **↓** | △ / Y, or stick down |
 | Duck / crouch (on the ground) | **↓** (or S) | Stick down |
+| **Belly slide** (on ice) | run, then hold **↓** | run, then stick down |
+| Skip a cutscene | Enter / Space | ✕ / A or Start |
 | Pause | P / Esc | Start |
 | Full screen | F / double-click | — |
 | Mute | M | — |
 
 ## ✨ Features
 
-- **A silly story intro** where the Big Bug kidnaps the family (press Enter to skip it).
-- **A hero duck with a huge hammer:** swing it, slam down from the air, or throw it like a boomerang:
-  the thrown hammer spins forward, smashes everything in its path and flies back to her wing.
-  The throw is a special move that recharges in 5 seconds (see the meter in the top bar).
-- **Bugs:** beetles, fast ladybugs, armored beetles that take two hits (and get *really* fast after the first),
+**Hammer Duck and her hammer:** swing it, slam down from the air, or throw it like a boomerang. The thrown hammer
+spins forward, smashes everything in its path and flies back to her wing. The throw is a special move that recharges
+in 5 seconds (see the meter in the top bar). 3 lives with 3 hearts each; a heart found at full health gives an extra life.
+
+### ☀️ World 1: Duck Island
+- Beaches, hills, a lagoon with flying rafts, crate fields, stone towers with springs and a bug swarm.
+- Beetles, fast ladybugs, armored beetles that take two hits (and get *really* fast after the first),
   and wasps that swoop down at you. Duck to dodge them!
-- **One long level:** a starting beach, hills, a lagoon with flying rafts, crate fields, stone towers with springs,
-  a bug swarm, a boss arena and the home beach.
-- **Boss fight** against the crowned Big Bug, with its own dramatic music.
-- **100 sunseeds** to collect. Find them all and see what happens to the sun at the end ☀️
-- **Lives and hearts:** 3 lives with 3 hearts each. A heart found at full health gives an extra life. Checkpoints along the way.
-- **The ending:** the duckling family celebrates with confetti while a calm lullaby plays.
-- Works with keyboard and game controllers; adapts to any window size and full screen.
+- **Boss:** the crowned Big Bug, who charges and jumps at you.
+- 100 sunseeds to collect. Find them all and see what happens to the sun ☀️
+
+### ❄️ World 2: Frosty Isle
+- A snowy night island with northern lights, a sleepy moon, pine trees, snowmen and igloos.
+- **New tricks:** slippery ice and the belly slide, ice floes that sink under your feet, cracking ice bridges,
+  steam geysers that blast you up cliffs, wind gusts that push you back (crouch to brace!) and falling icicles.
+- **New bugs:** snow fleas that hop at you, ice spiders that drop down on threads, frost moths that throw snowballs
+  (bat them back with the hammer: *return to sender!*) and roly-polys that curl up and roll at you.
+- **Boss:** the Bigger Bug, with a viking helmet and a magnificent mustache. He flies and drops snow bombs. Only a
+  thrown hammer (or a batted-back bomb) reaches him in the air, but when he dives and gets his head stuck in the
+  snow, smash away! Twice as tough as his little brother, and he gets angrier at half health.
+- 100 snowflakes to collect. Find them all and see what the northern lights do ❄️
+- **The ending:** smash the ice cage, and Drake's family thanks you: *"THANK YOU, SIS!"*
+
+Each world has its own music: an island tune, a dramatic boss theme, a victory march and a lullaby on Duck Island;
+a twinkly waltz, a galloping boss theme, a sleigh-bell march and a music-box lullaby on Frosty Isle.
 
 ![Intro: the Big Bug kidnaps the family](docs/screenshots/intro.png)
 ![Hammer throw](docs/screenshots/throw.png)
-![Lagoon](docs/screenshots/lagoon.png)
 ![Boss fight](docs/screenshots/boss.png)
-![Ending](docs/screenshots/ending.png)
+![Duck Island ending](docs/screenshots/ending.png)
+![The emergency letter](docs/screenshots/letter.png)
+![Frosty Isle intro: the Bigger Bug](docs/screenshots/frosty-intro.png)
+![Frosty Isle](docs/screenshots/frosty-isle.png)
+![Belly slide](docs/screenshots/belly-slide.png)
+![The Bigger Bug, stuck in the snow](docs/screenshots/bigger-bug.png)
+![Frosty Isle ending](docs/screenshots/frosty-ending.png)
 
 ## 🛠️ Development
 
+Plain JavaScript files loaded by `index.html` with ordinary `<script>` tags, so it still works by double-clicking
+(no web server, no bundler).
+
 ```
-index.html            the whole game (canvas 2D + Web Audio, plain JavaScript)
-tools/harness.js      headless Node.js harness that runs the real game code with fake canvas/audio/gamepad
-tools/smoke-test.js   regression test: controls, hammer throw, boss, music changes, ending
+index.html            canvas + the list of scripts, in load order
+src/engine.js         shared engine: physics, the duck & hammer, enemy framework, HUD, screens, main loop
+worlds/island.js      World 1: level, art, bugs, Big Bug boss, music, kidnapping intro, family ending
+worlds/frost.js       World 2: level, art, ice mechanics, bugs, Bigger Bug boss, music, intro, Drake's ending
+src/story.js          the pigeon scene between the worlds
+src/main.js           boot + debug shortcuts
+tools/harness.js      headless Node.js harness that runs the real game scripts with fake canvas/audio/gamepad
+tools/smoke-test.js   World 1 regression test (controls, throw, boss, music, intro, ending)
+tools/world2-test.js  World 2 mechanics test (ice, slide, floes, geysers, wind, icicles, bugs, boss, story)
 docs/screenshots/     images used in this README
-CLAUDE.md             design notes and conventions (level-building API, agreed game rules, testing workflow)
+CLAUDE.md             design notes and conventions (world API, level-building helpers, agreed rules, testing)
 ```
 
 Run the tests (Node.js 18+):
 
 ```
 node tools/smoke-test.js
+node tools/world2-test.js
 ```
 
-Debug shortcuts: open `index.html#x=150` to start at column 150 of the level, or `index.html#win` to jump to the ending.
+Debug shortcuts: `index.html#x=150` starts World 1 at column 150, `index.html#w=2&x=80` starts World 2 at column 80,
+and `#win` (or `#w=2&win`) jumps to a world's ending.
 
-For how the level is built (tiles, helpers, bug types, physics limits) and the design rules agreed so far, see [`CLAUDE.md`](CLAUDE.md).
+For how worlds and levels are built and the design rules agreed so far, see [`CLAUDE.md`](CLAUDE.md).
 
 ## 🙌 Credits
 

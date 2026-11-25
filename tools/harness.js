@@ -19,7 +19,7 @@ let notes=0;
 const param=()=>({value:0,setValueAtTime(){},exponentialRampToValueAtTime(){},linearRampToValueAtTime(){}});
 const node=()=>({connect(){},start(){notes++},stop(){},frequency:param(),gain:param(),Q:param(),type:''});
 global.AudioContext=function(){return{get currentTime(){return now/1000},state:'running',sampleRate:44100,destination:{},createGain:node,createOscillator:node,createBiquadFilter:node,createBufferSource:node,createBuffer:()=>({getChannelData:()=>new Float32Array(10)}),resume(){}}};
-(0,eval)(src+`;globalThis.GAME={get P(){return P},get L(){return L},get boss(){return boss},get state(){return state},get thrown(){return thrown},get track(){return trackName()},get WORLD(){return WORLD},WORLDS,startWorld,get introT(){return introT},get storyT(){return storyT},get winT(){return winT},get sunJoy(){return sunJoy},stats,keys,T:(x,y)=>T(x,y),hitEnemy,hurtPlayer};`);
+(0,eval)(src+`;globalThis.GAME={get P(){return P},get L(){return L},get boss(){return boss},get state(){return state},get thrown(){return thrown},get track(){return trackName()},get WORLD(){return WORLD},WORLDS,startWorld,get introT(){return introT},get storyT(){return storyT},get winT(){return winT},get sunJoy(){return sunJoy},stats,keys,T:(x,y)=>T(x,y),setT:(x,y,v)=>setT(x,y,v),groundTop:c=>groundTop(c),hitEnemy,hurtPlayer};`);
 module.exports={G:globalThis.GAME,BTN,notes:()=>notes,
   fr:n=>{for(let i=0;i<n;i++){now+=16.67;cb(now)}},
   dn:c=>L.keydown.forEach(f=>f({code:c,preventDefault:noop,repeat:false})),
