@@ -4,8 +4,14 @@ const tap=k=>{dn(k);fr(2);up(k)};
 let fails=0;const ok=(name,cond)=>{console.log((cond?'PASS ':'FAIL ')+name);if(!cond)fails++;};
 dn('Enter');up('Enter');fr(30);
 ok('ENTER on title starts the intro',G.state==='intro');
-fr(60*3);ok('intro plays boss music once the Big Bug arrives',G.track==='boss');
-fr(60*13);ok('intro ends by itself and the level starts',G.state==='play');
+// dialogue waits for a press: run the scene, pressing SPACE whenever it waits
+const advance=(sec)=>{for(let i=0;i<60*sec&&G.state==='intro';i++){fr(1);if(G.sceneWait){tap('Space');}}};
+{let k=0;while(!G.sceneWait&&k<300){fr(1);k++}const t0=G.introT;fr(120);
+ ok('intro dialogue waits for the player (no time limit)',G.sceneWait&&G.introT===t0&&G.state==='intro');
+ tap('Space');fr(3);ok('SPACE shows the next line',!G.sceneWait&&G.introT>t0);}
+{let k=0;while(!G.sceneWait&&k<600){fr(1);k++}const t0=G.introT;tap('KeyH');fr(3);ok('H also shows the next line',G.introT>t0);}
+advance(1.5);ok('intro plays boss music once the Big Bug arrives',G.track==='boss');
+advance(16);ok('after the last line the intro ends and the level starts',G.state==='play');
 const P=G.P;
 
 ok('seed total is exactly 100',G.L.totalSeeds===100);

@@ -74,7 +74,7 @@ function pollPad() {
   const ax = p.axes[0] || 0, ay = p.axes[1] || 0;
   pad = { left: ax < -0.4 || b(14), right: ax > 0.4 || b(15), down: ay > 0.5 || b(13), jump: b(0), atk: b(1), throw: b(2), slam: b(3), start: b(9) };
   if (pad.jump && !padPrev.jump) { jumpBuf = 0.13; initAudio(); onPress('Space'); }
-  if (pad.atk && !padPrev.atk) atkBuf = 0.12;
+  if (pad.atk && !padPrev.atk) { atkBuf = 0.12; if (state === 'intro' || state === 'story') onPress('KeyH'); }
   if (pad.throw && !padPrev.throw) throwBuf = 0.12;
   if ((pad.down && !padPrev.down) || (pad.slam && !padPrev.slam)) downBuf = 0.1;
   if (pad.start && !padPrev.start) onPress('Enter');
@@ -343,8 +343,9 @@ function onPress(code) {
   if (code === 'KeyM') { muted = !muted; if (master) master.gain.value = muted ? 0 : 0.55; return; }
   if (state === 'title' && (code === 'Enter' || code === 'Space')) { startWorld(0, true); return; }
   if (state === 'title' && code === 'Digit2' && unlocked() >= 2) { startWorld(1, true); return; }
-  if (state === 'intro' && (code === 'Enter' || code === 'Space' || code === 'Escape')) { startPlay(); return; }
-  if (state === 'story' && (code === 'Enter' || code === 'Space' || code === 'Escape')) { STORY.finish(); return; }
+  if ((state === 'intro' || state === 'story') && (code === 'Space' || code === 'KeyH' || code === 'KeyX')) { sceneWait = false; return; }
+  if (state === 'intro' && (code === 'Enter' || code === 'Escape')) { startPlay(); return; }
+  if (state === 'story' && (code === 'Enter' || code === 'Escape')) { STORY.finish(); return; }
   if (state === 'play' && (code === 'Escape' || code === 'KeyP')) { state = 'pause'; return; }
   if (state === 'pause' && (code === 'Escape' || code === 'KeyP' || code === 'Enter')) { state = 'play'; return; }
   if (state === 'gameover' && goT > 1 && (code === 'Enter' || code === 'Space')) { startWorld(worldIndex(), false); return; }
@@ -1192,6 +1193,21 @@ function drawWin() {
   } else if (!last && winT > 3 && Math.floor(gT * 2) % 2 === 0) txt(ui('Press ENTER to continue the adventure!', 'TAP to continue the adventure!'), W / 2, py, 26, '#ffd23f', OUT);
 }
 
+// Cutscene dialogue waits for the player: at each hold time (just before a speech bubble
+// would vanish) the scene stops until SPACE / H / a tap / ✕ / ○. ENTER, Esc, Start or SKIP skip the whole scene.
+let sceneWait = false;
+function sceneStep(t, holds, dt, update) {
+  if (sceneWait) return;
+  const h = (holds || []).find(h => h > t + 1e-6 && h <= t + dt);
+  if (h !== undefined) { update(h - t); sceneWait = true; } else update(dt);
+}
+function drawNextHint() {
+  if (!sceneWait) return;
+  const b = Math.sin(gT * 6) * 4;
+  ctx.globalAlpha = 0.75 + Math.sin(gT * 6) * 0.25;
+  txt(ui('SPACE = next  ▶', 'TAP = next  ▶'), W / 2 + b, H - 22, touchMode ? 24 : 18, '#ffe14d', OUT);
+  ctx.globalAlpha = 1;
+}
 function startPlay() {
   P.x = WORLD.intro.heroX(Math.min(introT, WORLD.intro.end)) - P.w / 2; P.y = groundTop(Math.floor(P.x / TS)) - P.h; P.face = 1; camX = 0;
   state = 'play'; jumpBuf = atkBuf = downBuf = throwBuf = 0; parts.length = 0; pops.length = 0; shake = 0; }
@@ -1242,8 +1258,8 @@ function render() {
   drawPops();
   ctx.restore();
   if (WORLD.drawScreen) WORLD.drawScreen(cx, cy);
-  if (state === 'intro') { WORLD.intro.overlay(); drawTouchMenus(); return; }
-  if (state === 'story') { STORY.overlay(); drawTouchMenus(); return; }
+  if (state === 'intro') { WORLD.intro.overlay(); drawNextHint(); drawTouchMenus(); return; }
+  if (state === 'story') { STORY.overlay(); drawNextHint(); drawTouchMenus(); return; }
   if (state === 'title') { drawTitle(); return; }
   drawHUD();
   if (state === 'play') drawTouchMenus();
@@ -1274,9 +1290,10 @@ function frame(now) {
     while (acc >= STEP_DT) { step(STEP_DT); acc -= STEP_DT; }
   } else {
     acc = 0; gT += dt;
+    if (state !== 'intro' && state !== 'story') sceneWait = false;
     if (state === 'gameover') { goT += dt; updateFx(dt); }
-    if (state === 'intro') { WORLD.intro.update(dt); updateFx(dt); shake = Math.max(0, shake - dt * 40); }
-    if (state === 'story') { STORY.update(dt); updateFx(dt); shake = Math.max(0, shake - dt * 40); }
+    if (state === 'intro') { sceneStep(introT, WORLD.intro.holds, dt, d => WORLD.intro.update(d)); updateFx(dt); shake = Math.max(0, shake - dt * 40); }
+    if (state === 'story') { sceneStep(storyT, STORY.holds, dt, d => STORY.update(d)); updateFx(dt); shake = Math.max(0, shake - dt * 40); }
     if (state === 'title') { titleT += dt; updateMovers(dt); updateFx(dt); shake = Math.max(0, shake - dt * 40); }
   }
   music();

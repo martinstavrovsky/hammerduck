@@ -42,7 +42,10 @@ bugs, boss mechanics and music. Don't reuse hills/crates/springs-style layouts f
 heroScarf?, seedSpark?, gameOverLine, win {title, line, seedName, bossLabel, allLine}, tracks {main, boss, hero, calm},
 build(B), drawBackground(cx,cy), drawWater(cx), drawTile(t,x,y,px,py), drawDecor(d), drawFamily(), drawWorld?(),
 drawScreen?(), update?(dt), onHammerArea?(rect, src), onRespawn?(), drawSeed?(it,bob), drawSeedIcon?(x,y),
-winUpdate?(dt, before), intro {end, update, draw, overlay, heroX(t), track(t)}`.
+winUpdate?(dt, before), intro {end, holds, update, draw, overlay, heroX(t), track(t)}`.
+- **Cutscene dialogue waits for the player:** `intro.holds` / `STORY.holds` list times (just before a speech bubble ends)
+  where `sceneStep()` stops the scene (`sceneWait`) until SPACE / H / tap / ✕ / ○; a "SPACE = next ▶" hint blinks.
+  New dialogue lines need a hold time. Tests: press Space whenever `G.sceneWait`.
 - Bug types go into `EDEF[type] = { w, h, hp, speed?, fly?, boss?, fallsWhenDead?, init?(e,col,row), update?(e,dt),
   draw(e), canHit?(e, src, dir), onHurt?(e,dir,src), harmless?(e), hurtInv?, hurtWords? }`.
   Hit sources: `'swing' | 'slam' | 'throw' | 'slide' | 'shot' | 'boss'`.
@@ -64,12 +67,15 @@ winUpdate?(dt, before), intro {end, update, draw, overlay, heroX(t), track(t)}`.
 
 ## Design decisions agreed with the user (keep these unless asked)
 - **Controls (keyboard):** ← → / A D walk · SPACE jump (↑/W also) · H hammer (X also) · J or ↓ in the air = slam ·
-  ↓ on the ground = crouch (on ice while moving = belly slide) · G = hammer throw · F full screen · M mute · P/Esc pause · Enter skips cutscenes.
+  ↓ on the ground = crouch (on ice while moving = belly slide) · G = hammer throw · F full screen · M mute · P/Esc pause ·
+  cutscenes: SPACE/H = next line, Enter/Esc = skip the whole scene (touch: tap = next, SKIP button = skip).
 - **Controller (standard mapping):** Cross/A jump · Circle/B hammer · Square/X throw · Triangle/Y slam · stick down crouch/slam · Start.
 - **Touch (phones/tablets):** `touchMode` is on after a finger touch (or on a coarse-pointer device) and off after a key or
   gamepad press; prompts use `ui(keyText, touchText)` and signs take an optional touch text `sign(col, text, touchText)`.
   Left 42% of the screen = d-pad (diagonals work: ▶+▼ belly slide); buttons pick the nearest within 2.2 radii.
-  Intro/story skip only via the SKIP button (no accidental skips). Portrait = pause + "turn sideways" screen.
+  Uses touch events, rebuilt from `e.touches` on every event, so a lost touchend (iOS edge swipe) can't leave ▶ stuck
+  (pointer events got stuck on an iPhone). Menu taps act when the finger lifts (user activation for full screen).
+  Intro/story: tap = next line, skip only via the SKIP button (no accidental skips). Portrait = pause + "turn sideways" screen.
   Full screen: requested on the title tap (Android/iPad) + landscape lock; iPhone has no Fullscreen API → Add to Home Screen.
   Canvas resolution is capped at 2× devicePixelRatio. iOS `navigator.audioSession.type = 'playback'` so sound plays on silent.
 - **Hammer throw:** Thor-style boomerang; `THROW_RELOAD = 5` s from the catch; loaded at start and after a respawn.

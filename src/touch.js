@@ -9,7 +9,7 @@
 const tcv = document.getElementById('tc'), tctx = tcv && tcv.getContext ? tcv.getContext('2d') : null;
 let tvw = innerWidth, tvh = innerHeight, tdpr = 1;
 const SAFE = { l: 0, r: 0, t: 0, b: 0 };
-const fingers = new Map(); // pointerId -> { kind: 'pad' | button id, x, y }
+const fingers = new Map(); // touch identifier -> { kind: 'pad' | button id | 'menu' | 'none', x, y }
 const BTN_PRESSED = {};
 const IS_IPHONE = typeof navigator !== 'undefined' && /iPhone|iPod/.test(navigator.userAgent || '');
 const STANDALONE = (typeof matchMedia === 'function' && matchMedia('(display-mode: fullscreen), (display-mode: standalone)').matches) ||
@@ -68,7 +68,7 @@ function goFullscreen() {
   try { if (screen.orientation && screen.orientation.lock) screen.orientation.lock('landscape').catch(() => {}); } catch (e) {}
 }
 
-// ---------------------------------------------------------------- pointer handling
+// ---------------------------------------------------------------- touch handling
 function padDirs(f, pad) {
   const dx = f.x - pad.x, dy = f.y - pad.y, dz = pad.r * 0.22;
   return { left: dx < -dz, right: dx > dz, down: dy > pad.r * 0.38 };
@@ -101,44 +101,52 @@ function menuTap(sx, sy) {
       if (it.id === 'mute') onPress('KeyM');
       if (it.id === 'fs') toggleFullscreen();
     }
-  } else if (state === 'intro' || state === 'story') { if (inBox(g, SKIP_BOX)) onPress('Enter'); }
+  } else if (state === 'intro' || state === 'story') onPress(inBox(g, SKIP_BOX) ? 'Enter' : 'Space');
   else if (state === 'gameover' || state === 'win') onPress('Enter');
 }
-function onTouchDown(e) {
-  if (e.pointerType === 'mouse') return;
-  touchMode = true; initAudio();
-  if (e.cancelable && e.preventDefault) e.preventDefault();
-  if (portrait()) return;
-  const x = e.clientX, y = e.clientY;
-  if (state !== 'play') { menuTap(x, y); return; }
+// Touch events (not pointer events): every touch event carries e.touches, the full list of fingers
+// still on the screen. Rebuilding from it means a lost "finger up" (iOS edge swipes, notifications,
+// app switches) can never leave a button stuck: the next touch fixes it.
+function fingerDown(id, x, y) {
+  if (state !== 'play') { fingers.set(id, { kind: 'menu', x, y }); return; } // menus act when the finger lifts
   const g = toGame(x, y);
-  if (Math.hypot(g.x - PAUSE_BTN.x, g.y - PAUSE_BTN.y) < PAUSE_BTN.r * 1.8) { onPress('Escape'); return; }
+  if (Math.hypot(g.x - PAUSE_BTN.x, g.y - PAUSE_BTN.y) < PAUSE_BTN.r * 1.8) { fingers.set(id, { kind: 'none', x, y }); onPress('Escape'); return; }
   const { pad, btns } = layout();
-  if (x < tvw * 0.42 || Math.hypot(x - pad.x, y - pad.y) < pad.r * 1.4) { fingers.set(e.pointerId, { kind: 'pad', x, y }); refreshPad(); return; }
+  if (x < tvw * 0.42 || Math.hypot(x - pad.x, y - pad.y) < pad.r * 1.4) { fingers.set(id, { kind: 'pad', x, y }); return; }
   let best = null, bd = 1e9;
   for (const b of btns) { const d = Math.hypot(x - b.x, y - b.y) / b.r; if (d < bd) { bd = d; best = b; } }
-  if (best && bd < 2.2) { fingers.set(e.pointerId, { kind: best.id, x, y }); pressButton(best.id); }
+  if (best && bd < 2.2) { fingers.set(id, { kind: best.id, x, y }); pressButton(best.id); }
+  else fingers.set(id, { kind: 'none', x, y });
 }
-function onTouchMove(e) {
-  const f = fingers.get(e.pointerId); if (!f) return;
+function syncTouches(e) {
+  const live = new Set();
+  for (const t of e.touches || []) {
+    live.add(t.identifier);
+    const f = fingers.get(t.identifier); if (f) { f.x = t.clientX; f.y = t.clientY; }
+  }
+  for (const [id, f] of fingers) if (!live.has(id)) {
+    fingers.delete(id);
+    if (f.kind === 'menu') { if (!portrait()) menuTap(f.x, f.y); }
+    else if (f.kind !== 'pad' && f.kind !== 'none') releaseButton(f.kind);
+  }
+  refreshPad();
+}
+function onTouchStart(e) {
+  touchMode = true; initAudio();
   if (e.cancelable && e.preventDefault) e.preventDefault();
-  f.x = e.clientX; f.y = e.clientY; if (f.kind === 'pad') refreshPad();
+  for (const t of e.changedTouches || []) if (!fingers.has(t.identifier) && !portrait()) fingerDown(t.identifier, t.clientX, t.clientY);
+  syncTouches(e);
 }
-function onTouchUp(e) {
-  initAudio();
-  const f = fingers.get(e.pointerId); if (!f) return;
-  fingers.delete(e.pointerId);
-  if (f.kind === 'pad') refreshPad(); else releaseButton(f.kind);
-}
+function onTouchMove(e) { if (e.cancelable && e.preventDefault) e.preventDefault(); syncTouches(e); }
+function onTouchEnd(e) { initAudio(); syncTouches(e); }
 function releaseAll() { fingers.clear(); for (const k in BTN_PRESSED) BTN_PRESSED[k] = 0; TCH.left = TCH.right = TCH.down = TCH.jump = false; }
-addEventListener('pointerdown', onTouchDown, { passive: false });
-addEventListener('pointermove', onTouchMove, { passive: false });
-addEventListener('pointerup', onTouchUp); addEventListener('pointercancel', onTouchUp);
+addEventListener('touchstart', onTouchStart, { passive: false });
+addEventListener('touchmove', onTouchMove, { passive: false });
+addEventListener('touchend', onTouchEnd); addEventListener('touchcancel', onTouchEnd);
 addEventListener('blur', releaseAll);
 // no pinch zoom, long-press menus or double-tap zoom while playing
 addEventListener('gesturestart', e => e.preventDefault && e.preventDefault());
 addEventListener('contextmenu', e => { if (touchMode && e.preventDefault) e.preventDefault(); });
-addEventListener('touchend', () => initAudio());
 document.addEventListener('visibilitychange', () => { if (document.hidden) { releaseAll(); if (state === 'play') state = 'pause'; } });
 // iOS: play sound even when the ring/silent switch is on silent (Safari 16.4+)
 try { if (navigator.audioSession) navigator.audioSession.type = 'playback'; } catch (e) {}
@@ -250,5 +258,8 @@ function drawTouch() {
   if (!touchMode) return;
   if (portrait()) { drawRotate(); return; }
   if (state === 'play') drawControls();
-  else if (fingers.size) releaseAll();
+  else if (TCH.left || TCH.right || TCH.down || TCH.jump || Object.values(BTN_PRESSED).some(n => n)) {
+    for (const [id, f] of fingers) if (f.kind !== 'menu') f.kind = 'none';
+    for (const k in BTN_PRESSED) BTN_PRESSED[k] = 0; TCH.left = TCH.right = TCH.down = TCH.jump = false;
+  }
 }

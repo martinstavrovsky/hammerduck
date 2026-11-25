@@ -775,8 +775,8 @@ function drawFrostFamily() {
     txt('Sis! Over here!', f.drake + 5, f.y - 130 + b, 18, '#e8262e', null);
   }
   if (state === 'win') {
-    if (winT > 0.95 && winT < 2.9) bubble(f.drake, f.y - 78, 'THANK YOU, SIS!', 0.95, { now: winT, color: '#e8262e', size: 20 });
-    if (winT > 1.7 && winT < 2.9) bubble(f.kids[1].x + 10, f.y - 40, 'Yay, Auntie!', 1.7, { now: winT });
+    if (winT > 0.95 && winT < 5.9) bubble(f.drake, f.y - 78, 'THANK YOU, SIS!', 0.95, { now: winT, color: '#e8262e', size: 20 });
+    if (winT > 1.7 && winT < 5.9) bubble(f.kids[1].x + 10, f.y - 40, 'Yay, Auntie!', 1.7, { now: winT });
   }
 }
 
@@ -909,7 +909,7 @@ registerWorld({
     if (before < 0.55 && winT >= 0.55) { SFX.shatter(); shake = 12; for (let i = 0; i < 4; i++) shards(lerp(f.cageX0, f.cageX1, i / 3), f.y - 50, 10); popup(f.x, f.y - 120, 'FREE!', '#9fe7ff', 44); }
     if (allSeeds() && winT > 1.2 && Math.random() < dt * 2) addPart({ type: 'streak', x: camX + rand(200, W), y: camY + rand(20, 160), vx: -rand(500, 800), vy: rand(200, 320), life: .7, size: 2.5, color: '#fff6b0' });
   },
-  intro: { end: FI_END, update: updateFrostIntro, draw: drawFrostIntro, overlay: drawFrostIntroOverlay, heroX: () => FI_HERO_X,
+  intro: { end: FI_END, holds: [1.95, 3.45, 4.05, 7.35, 9.75, 10.85, 11.55, 12.9], update: updateFrostIntro, draw: drawFrostIntro, overlay: drawFrostIntroOverlay, heroX: () => FI_HERO_X,
     track: t => t < 4.1 ? 'calm' : (t < 11.4 ? 'boss' : null) },
 });
 

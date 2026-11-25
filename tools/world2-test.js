@@ -135,7 +135,9 @@ for(let y=0;y<12;y++){if(G.T(201,y)===6)G.setT(201,y,0);if(G.T(227,y)===6)G.setT
 G.P.x=236*TS;G.P.y=G.groundTop(236)-G.P.h;G.keys.ArrowRight=true;fr(60*4);clearKeys();
 ok('World 1 won',G.state==='win');
 tap('Enter');fr(5);ok('ENTER starts the pigeon story',G.state==='story');
-fr(60*14);ok('story leads into the Frosty Isle intro',G.state==='intro'&&G.WORLD.name==='Frosty Isle');
+{let k=0;while(!G.sceneWait&&k<300){fr(1);k++}const t0=G.storyT;fr(200);ok('story dialogue waits for a press',G.sceneWait&&G.storyT===t0);}
+for(let i=0;i<60*16&&G.state==='story';i++){fr(1);if(G.sceneWait)tap('Space');}
+ok('story leads into the Frosty Isle intro',G.state==='intro'&&G.WORLD.name==='Frosty Isle');
 ok('lives carry over to World 2',G.P.lives===5,G.P.lives);
 
 console.log(fails?`\n${fails} FAILED`:'\nAll passed');process.exit(fails?1:0);
