@@ -1,5 +1,7 @@
 # Hammer Duck
 
+Repo: https://github.com/martinstavrovsky/hammerduck (public, branch `main`). Work on a branch, open a PR, merge.
+
 A 2D platformer for a family (played on a MacBook Air M4, in Safari/Chrome, keyboard or DualShock).
 Bright, cartoony style with comic "SMASH!" pop-ups and faces on bushes, clouds, the sun and the moon. All original art;
 do not copy any existing game's characters, levels or look.
@@ -27,6 +29,7 @@ bugs, boss mechanics and music. Don't reuse hills/crates/springs-style layouts f
 - `src/main.js`: boot + debug hashes.
 - `tools/harness.js`: headless Node harness: loads the same scripts as index.html with fake canvas/audio/gamepad.
 - `tools/smoke-test.js` (world 1) and `tools/world2-test.js` (world 2 + story): both must print "All passed".
+- `tools/stage.html`: screenshot staging page (freeze any scene). `docs/screenshots/`: README images.
 
 ## World API (`registerWorld({...})`, order = world number)
 `name, width, startCol, goalCol, arena {L, R}, winStopX, winCamX, bossName, bossDefeatText, gateColor, hudBug,
@@ -76,8 +79,9 @@ winUpdate?(dt, before), intro {end, update, draw, overlay, heroX(t), track(t)}`.
    Run the world 2 test a few times: the game uses randomness, so make tests deterministic (reset velocities, pick solid ground).
 2. Visuals: headless Chrome screenshots, then look at them:
    `"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --headless=new --disable-gpu --hide-scrollbars --screenshot=out.png --window-size=1024,576 --virtual-time-budget=2500 "file://$PWD/index.html#w=2&x=60"`
-   For exact moments (cutscenes, boss states), build a scratch page that loads the same scripts, sets the state, then
-   keeps calling `render()` in a requestAnimationFrame loop (Chrome resizes after load, which clears a single draw).
+   For exact moments use `tools/stage.html` (it freezes a scene; see the hash options at its top), e.g.
+   `--screenshot=out.png "file://$PWD/tools/stage.html#intro=2&t=8.4"` or `#w=2&x=196&boss=stuck&bx=199&t=0.6`.
+   Note it keeps calling `render()` every frame: Chrome resizes after load, which clears a single draw.
 3. Test through real key/button presses (`dn`/`up`/`BTN`), not only by calling functions.
 
 ## Gotchas learned
