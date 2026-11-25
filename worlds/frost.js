@@ -287,6 +287,8 @@ function fleaUpdate(e, dt) {
       const dx = P.x + P.w / 2 - (e.x + e.w / 2), close = Math.abs(dx) < 520 && !P.dead;
       e.dir = close ? Math.sign(dx) || 1 : -e.dir;
       e.vx = close ? e.dir * rand(150, 230) : 0; e.vy = -rand(close ? 560 : 380, close ? 720 : 480);
+      const land = e.x + e.w / 2 + e.vx * (2 * -e.vy / G); // never hop into the water: if it's not safe, hop on the spot
+      if (e.vx && !(groundAt(land, e.y + e.h, 2) && groundAt(land + e.dir * 14, e.y + e.h, 2))) e.vx = 0;
       e.cd = rand(0.8, 1.5); e.squish = 0.15;
     }
   }
@@ -325,9 +327,9 @@ function rolyUpdate(e, dt) {
   e.vy = Math.min(e.vy + G * dt, MAXFALL);
   moveBody(e, dt);
   if (e.hitL) e.dir = 1; else if (e.hitR) e.dir = -1;
-  else if (e.st === 'walk' && e.onGround) {
-    const fx = e.dir > 0 ? e.x + e.w + 2 : e.x - 2, t = T(Math.floor(fx / TS), Math.floor((e.y + e.h + 4) / TS));
-    if (!SOLID(t) && t !== 2) e.dir *= -1;
+  else if (e.onGround && !groundAt(e.dir > 0 ? e.x + e.w + 2 : e.x - 2, e.y + e.h)) { // bounce back at the edge
+    e.dir *= -1; e.x += e.dir * 3;
+    if (e.st === 'roll') { SFX.boing(); dust(e.x + e.w / 2, e.y + e.h, 4, 0.6); }
   }
 }
 
@@ -820,7 +822,7 @@ function drawFrostIntro() {
   let ham = REST + Math.sin(gT * 3) * 0.04;
   if (t < 2.25) ham = 1.25 + Math.sin(gT * 5) * 0.1; // hammer dangling while she is carried
   if (t > 11.6) ham = -1.57 + Math.sin(gT * 22) * 0.18;
-  drawDuck({ x: hx, y: hy, face: 1, scale: 1.12, sx, sy, body: '#ffd23f', light: '#fff0a6', dark: '#f0b400', acc: 'bandana', scarf: '#4fc3f7', ham,
+  drawDuck({ x: hx, y: hy, face: 1, scale: 1.12, sx, sy, body: '#ffd23f', light: '#fff0a6', dark: '#f0b400', acc: 'bandana', scarf: '#4fc3f7', coat: '#ffffff', ham,
     determined: t > 4.4, happy: t > 2.6 && t < 4.2, run: 0, rot: t < 2.1 ? Math.sin(gT * 5) * 0.15 : 0 });
   if (t < 4.2) drawPigeon(pc.px, pc.py, t < 2.1 ? 1 : -1, true, false);
   // the Bigger Bug with the caged family dangling below
@@ -877,7 +879,7 @@ registerWorld({
   width: F_WIDTH, startCol: 2, goalCol: F_GOAL,
   arena: { L: F_ARENA_L, R: F_ARENA_R },
   winStopX: 225.0 * TS, winCamX: 228 * TS - W / 2,
-  bossName: 'THE BIGGER BUG', bossDefeatText: 'BIGGER BUG BEATEN!', gateColor: '#cdf3ff', hudBug: 'flea', heroScarf: '#4fc3f7', seedSpark: '#bfefff',
+  bossName: 'THE BIGGER BUG', bossDefeatText: 'BIGGER BUG BEATEN!', gateColor: '#cdf3ff', hudBug: 'flea', heroScarf: '#4fc3f7', heroCoat: '#ffffff', seedSpark: '#bfefff',
   gameOverLine: "Brrr! Don't give up, Drake's family needs you!",
   win: { title: 'FROSTY ISLE SAVED!', line: "Drake's family is safe and warm!", seedName: 'Snowflakes', bossLabel: '+ the Bigger Bug',
     allLine: '❄ ALL 100 SNOWFLAKES!  The northern lights are dancing! ❄' },

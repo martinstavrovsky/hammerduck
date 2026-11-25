@@ -198,6 +198,12 @@ const setT = (x, y, v) => { if (x >= 0 && x < LW && y >= 0 && y < ROWS) tiles[y 
 // tiles: 1 ground · 2 one-way plank · 3 crate · 4 stone · 6 boss gate · 7 snow · 8 ice · 9 cracking ice · 10 ice block
 const SOLID = t => t === 1 || t === 3 || t === 4 || t === 6 || t === 7 || t === 8 || t === 9 || t === 10;
 const ICY = t => t === 8 || t === 9;
+// is there something to stand on at x, at most `drop` tiles below feetY? (bugs use it so they never walk/hop off into water)
+function groundAt(x, feetY, drop = 0) {
+  const col = Math.floor(x / TS), r0 = Math.floor((feetY + 2) / TS);
+  for (let r = r0; r <= Math.min(ROWS - 1, r0 + drop); r++) { const t = T(col, r); if (SOLID(t) || t === 2) return true; }
+  return false;
+}
 function groundTop(col) { for (let y = 0; y < ROWS; y++) { const t = T(col, y); if (SOLID(t) || t === 2) return y * TS; } return ROWS * TS; }
 
 // Bug types are registered by the worlds: { w, h, hp, speed?, fly?, boss?, init?, update?, draw, canHit?, onHurt?, harmless? }
@@ -377,6 +383,7 @@ function updatePlayer(dt) {
     if (room || !P.onGround) { P.crouch = false; P.y -= STAND_H - CROUCH_H; P.h = STAND_H; }
   }
   if (P.crouch) dir = 0;
+  P.walking = dir !== 0;
 
   // horizontal (ice is slippery; crouching on ice = belly slide that keeps its speed)
   const under = T(Math.floor((P.x + P.w / 2) / TS), Math.floor((P.y + P.h + 2) / TS));
@@ -469,7 +476,7 @@ function updatePlayer(dt) {
   // animation helpers
   P.sx += (1 - P.sx) * Math.min(1, dt * 12); P.sy += (1 - P.sy) * Math.min(1, dt * 12);
   if (P.onGround) P.lastGroundY = P.y + P.h;
-  if (P.onGround) P.run += Math.abs(P.vx) * dt * 0.05;
+  if (P.onGround && P.walking) P.run += Math.abs(P.vx) * dt * 0.05;
   P.sliding = P.crouch && P.onGround && Math.abs(P.vx) > 140;
   if (P.sliding && Math.random() < dt * 30) addPart({ type: 'dust', x: P.x + P.w / 2 - P.face * 14, y: P.y + P.h, vx: -P.vx * 0.3 + rand(-30, 30), vy: rand(-80, -20), drag: 4, life: .35, size: rand(5, 9), color: '#fff' });
   P.blink -= dt; if (P.blink < -0.12) P.blink = rand(1.5, 4);
@@ -916,8 +923,17 @@ function drawDuck(o) {
   ctx.beginPath(); ctx.moveTo(-14, -26); ctx.lineTo(-28, -33); ctx.lineTo(-17, -14); ctx.closePath();
   ctx.fillStyle = o.body; ctx.fill(); ctx.lineWidth = 3; ctx.strokeStyle = OUT; ctx.lineJoin = 'round'; ctx.stroke();
   // body
-  ell(0, -19, 19, 16, o.body, OUT, 3);
-  ell(5, -14, 11, 8, o.light);
+  if (o.coat) { // puffy winter coat
+    ell(0, -19, 20.5, 17, o.coat, OUT, 3);
+    ctx.strokeStyle = 'rgba(150,175,220,.7)'; ctx.lineWidth = 2;
+    for (const yy of [-26, -18, -10]) { ctx.beginPath(); ctx.ellipse(0, yy, 17 - Math.abs(yy + 18) * 0.5, 3, 0, 0.15, Math.PI - 0.15); ctx.stroke(); }
+    ctx.strokeStyle = 'rgba(150,175,220,.9)'; ctx.beginPath(); ctx.moveTo(10, -33); ctx.quadraticCurveTo(14, -19, 9, -5); ctx.stroke();
+    ell(12.5, -24, 2.2, 2.2, '#4fc3f7', OUT, 1.2); ell(13, -15, 2.2, 2.2, '#4fc3f7', OUT, 1.2);
+    ctx.fillStyle = '#ffffff'; for (let i = 0; i < 6; i++) { ctx.beginPath(); ctx.arc(-15 + i * 6, -6.5, 3.2, 0, 7); ctx.fill(); } // fluffy hem
+  } else {
+    ell(0, -19, 19, 16, o.body, OUT, 3);
+    ell(5, -14, 11, 8, o.light);
+  }
   ctx.restore();
   // head (drops down and forward when crouching)
   ctx.save(); ctx.translate(headDX, headDY);
@@ -979,7 +995,7 @@ function drawDuck(o) {
   if (o.ham !== undefined && !hamBehind) drawHammer(o.ham);
   // wing
   const wa = o.ham !== undefined ? clamp(o.ham * 0.35, -0.6, 0.4) : (o.wave ? Math.sin(gT * 14) * 0.6 - 0.6 : 0);
-  ell(-1, -21, 11, 7, o.dark, OUT, 2.5, wa);
+  ell(-1, -21, 11, 7, o.coat ? '#e3ebfa' : o.dark, OUT, 2.5, wa);
   ctx.restore();
   ctx.restore();
 }
@@ -1013,8 +1029,8 @@ function drawPlayer() {
   else if (P.pound && P.poundT < 0.16) rot = -P.face * (P.poundT / 0.16) * Math.PI * 2;
   else if (P.sliding) { rot = P.face * 0.35; ham = -0.45 + Math.sin(gT * 30) * 0.04; } // belly slide: lean forward, hammer out front
   const hop = (state === 'win' && P.vx === 0 && winT > 0.6) ? Math.abs(Math.sin(gT * 6)) * 16 : 0;
-  drawDuck({ x: P.x + P.w / 2, y: P.y + P.h - hop, face: P.face, sx: P.sx * (1 - idleBob), sy: P.sy * (1 + idleBob), crouch: P.cv, scale: 1.12, run: P.run, moving: P.onGround && Math.abs(P.vx) > 20,
-    body: '#ffd23f', light: '#fff0a6', dark: '#f0b400', acc: 'bandana', scarf: WORLD.heroScarf, ham, rot, dead: P.dead, blink: P.blink < 0 && !P.dead, determined: !P.dead && state === 'play', happy: state === 'win' && winT > 0.6 });
+  drawDuck({ x: P.x + P.w / 2, y: P.y + P.h - hop, face: P.face, sx: P.sx * (1 - idleBob), sy: P.sy * (1 + idleBob), crouch: P.cv, scale: 1.12, run: P.run, moving: P.onGround && P.walking && Math.abs(P.vx) > 20,
+    body: '#ffd23f', light: '#fff0a6', dark: '#f0b400', acc: 'bandana', scarf: WORLD.heroScarf, coat: WORLD.heroCoat, ham, rot, dead: P.dead, blink: P.blink < 0 && !P.dead, determined: !P.dead && state === 'play', happy: state === 'win' && winT > 0.6 });
 }
 function drawDuckling(x, y, face, hop, wave, scarf) {
   ctx.save(); ctx.translate(x, y - hop); ctx.scale(face, 1);

@@ -16,6 +16,21 @@ place(13);G.keys.ArrowRight=true;fr(40);G.keys.ArrowRight=false;let x0=P().x;fr(
 place(2);G.keys.ArrowRight=true;fr(40);G.keys.ArrowRight=false;x0=P().x;fr(30);const snowSlide=P().x-x0;
 ok('ice is slippery (slides much further than snow)',iceSlide>snowSlide*3,`ice ${iceSlide.toFixed(0)}px vs snow ${snowSlide.toFixed(0)}px`);
 
+// --- sliding on ice: the feet stop walking
+G.startWorld(1,false);fr(3);bugsOnly([]);place(13);G.keys.ArrowRight=true;fr(40);G.keys.ArrowRight=false;
+{const r0=P().run;fr(20);ok('feet stand still while sliding on ice (no walking animation)',P().run===r0&&Math.abs(P().vx)>20,`still sliding at ${P().vx.toFixed(0)}`);}
+
+// --- bugs never walk or hop into the water on their own
+G.startWorld(1,false);fr(3);bugsOnly(['roly']);
+{const r=G.L.enemies[0];Object.assign(r,{x:27*TS,y:G.groundTop(27)-30,st:'roll',rollT:3,dir:1,vx:0,vy:0,awake:true});place(20);
+ for(let i=0;i<60*3;i++){P().inv=9;fr(1);}
+ ok('a rolling roly-poly bounces back at the edge of a water hole',G.L.enemies.includes(r)&&r.y<G.groundTop(27),`x col ${(r.x/TS).toFixed(1)}`);}
+G.startWorld(1,false);fr(3);bugsOnly(['flea']);
+{const f=G.L.enemies[0];Object.assign(f,{x:51*TS,y:G.groundTop(51)-26,vx:0,vy:0,awake:true,cd:0});
+ const fl=G.L.movers.find(m=>m.ice);P().x=fl.x+10;P().y=fl.y-P().h;P().vy=0;
+ let hops=0,was=true;for(let i=0;i<60*6;i++){P().inv=9;fl.sink=0;fl.sit=0;fr(1);if(!f.onGround&&was)hops++;was=f.onGround;}
+ ok('a snow flea next to the water hops in place instead of jumping in',G.L.enemies.includes(f)&&!f.dead&&f.y<500&&hops>=2,`${hops} hops, x col ${(f.x/TS).toFixed(1)}`);}
+
 // --- belly slide keeps speed and bowls over bugs
 G.startWorld(1,false);fr(3);bugsOnly(['flea']);
 const flea=G.L.enemies[0];place(12);

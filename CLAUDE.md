@@ -65,6 +65,10 @@ winUpdate?(dt, before), intro {end, update, draw, overlay, heroX(t), track(t)}`.
   snow fleas, ice spiders (duck under them), frost moths (snowballs can be batted back and home in on the thrower), roly-polys
   (a swing only bounces a rolling one; throw/slam/slide stop it); Bigger Bug: 10 hp, flies + snow bombs, only the throw or a
   batted bomb hurts him in the air; he dives and gets stuck (harmless and hittable, ~3 hits per dive); angry at ≤ 5 hp (double dives, fleas).
+- **Hammer Duck dresses for the weather:** on Frosty Isle she wears a white puffy coat + blue scarf (`heroCoat`, `heroScarf`).
+- **Feet only move while you walk:** sliding on ice (no direction pressed) keeps the legs still (`P.walking`).
+- **Bugs never fall off platforms or into water on their own:** walkers and rolling roly-polys bounce back at edges,
+  fleas only hop where they can land (`groundAt()`); only a hit from Hammer Duck may knock a bug off.
 - **Music per world:** intro (calm → boss) · main · boss · hero (after the boss) · victory jingle · calm (ending). No laugh sounds.
 
 ## Testing workflow
