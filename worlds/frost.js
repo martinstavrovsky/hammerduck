@@ -126,12 +126,12 @@ function buildFrost(B) {
   bug('bigger', 205);
 
   // ---- checkpoints & signs
-  sign(4, 'Brrr! ICE is slippery!'); sign(12, 'Run + ↓ on ice = BELLY SLIDE!');
+  sign(4, 'Brrr! ICE is slippery!'); sign(12, 'Run + ↓ on ice = BELLY SLIDE!', 'Run + ▼ on ice = BELLY SLIDE!');
   sign(51, 'Ice floes SINK! Keep hopping!');
   sign(82, 'Ride the GEYSER steam up!'); cp(89);
   cp(105); sign(110, 'Look out for ICICLES!');
   sign(130, "Cracking ice! Don't stop!");
-  cp(139); sign(142, 'WIND! Duck (↓) to brace!');
+  cp(139); sign(142, 'WIND! Duck (↓) to brace!', 'WIND! Duck (▼) to brace!');
   cp(178); sign(183, 'BIGGER BUG ahead! THROW the hammer at him!');
   sign(215, "Drake's igloo →");
 
@@ -851,7 +851,7 @@ function drawFrostIntroOverlay() {
   ctx.fillStyle = '#000'; ctx.fillRect(0, 0, W, bar); ctx.fillRect(0, H - bar, W, bar);
   if (introT < 1.8) txt('Frosty Isle...  brrr!', W / 2, 90, 28, '#dff4ff', '#1d3b5c');
   if (introT > 13.0) { const s = easeOut(Math.min(1, (introT - 13) / 0.3)); ctx.save(); ctx.translate(W / 2, 200); ctx.scale(s, s); rainbowTitle('GO GET HIM!', 0, 0, 76, gT); ctx.restore(); }
-  if (bar > 20) txt('ENTER = skip', W - 80, H - 22, 14, '#aaa', null);
+  if (bar > 20 && !touchMode) txt('ENTER = skip', W - 80, H - 22, 14, '#aaa', null);
 }
 
 // ---------------------------------------------------------------- register

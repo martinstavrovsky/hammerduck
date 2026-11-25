@@ -22,6 +22,18 @@ and all music and sound effects are generated live with the Web Audio API.
 3. Press **Enter** or **Space** to start. Press **F** (or double-click) to play in full screen.
 4. After finishing Duck Island once, press **2** on the title screen to fly straight to Frosty Isle.
 
+## 📱 Play on a phone or tablet
+
+Open **https://martinstavrovsky.github.io/hammerduck/** and turn the device sideways. Touch controls appear
+as soon as you touch the screen: a d-pad on the left (◀ ▶ walk, ▼ duck / slam) and **JUMP**, **HAMMER**,
+**THROW** and **SLAM** buttons on the right. Tap ⏸ for the pause menu (sound on/off, full screen).
+
+- **Android / iPad:** the game goes full screen when you tap to start.
+- **iPhone:** Safari doesn't allow full screen for web pages. Tap **Share ⬆ → Add to Home Screen** instead:
+  the Hammer Duck icon then opens the game full screen, like an app.
+
+![Touch controls](docs/screenshots/touch.png)
+
 ## 🎮 Controls
 
 | Action | Keyboard | Controller (PlayStation / Xbox) |

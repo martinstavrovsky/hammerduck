@@ -88,20 +88,20 @@ function buildIsland(B) {
   // ---- entities
 
   // 1
-  sign(3, '← →  walk'); sign(8, 'SPACE  jump'); sign(13, 'H  hammer   ·   G  THROW it!');
+  sign(3, '← →  walk', '◀ ▶  walk'); sign(8, 'SPACE  jump', 'JUMP  button'); sign(13, 'H  hammer   ·   G  THROW it!', 'HAMMER   ·   THROW it!');
   seeds(5, 8, 3); bug('beetle', 17); seeds(23, 6, 3); bug('beetle', 27); seedArc(29, 7, 5);
   // 2
   seeds(34, 8, 3); seedArc(41, 7, 4);
   bug('ladybug', 37); bug('beetle', 43); seeds(48, 5, 4); bug('ladybug', 56); seeds(60, 6, 2);
   // 3
-  sign(65, 'Wasps swoop low! Hold ↓ to duck!');
+  sign(65, 'Wasps swoop low! Hold ↓ to duck!', 'Wasps swoop low! Hold ▼ to duck!');
   bug('beetle', 68); bug('fly', 74, 4); seeds(72, 6, 6); seeds(84, 5, 2); bug('beetle', 81); bug('ladybug', 88); bug('fly', 87, 4);
   // 4 lagoon
   mover(92, 8, 96, 8, 3, 3.2); mover(103, 8, 103, 4, 2, 3); mover(105, 6, 108, 6, 3, 3);
   seeds(93, 6, 3); bug('fly', 100, 4); seeds(105, 4, 3);
   // 5
   seeds(135, 8, 3);
-  cp(113); sign(117, 'In the air: press J or ↓ for a HAMMER SLAM!');
+  cp(113); sign(117, 'In the air: press J or ↓ for a HAMMER SLAM!', 'In the air: press SLAM or ▼ for a HAMMER SLAM!');
   bug('armor', 121); seeds(129, 6, 3); bug('armor', 133); bug('ladybug', 138);
   // 6
   seeds(158, 7, 2); seedArc(170, 8, 4);
@@ -652,7 +652,7 @@ function drawIslandIntroOverlay() {
     const s = easeOut(Math.min(1, (introT - 13) / 0.3));
     ctx.save(); ctx.translate(W / 2, 200); ctx.scale(s, s); rainbowTitle('GET THEM BACK!', 0, 0, 76, gT); ctx.restore();
   }
-  if (bar > 20) txt('ENTER = skip', W - 80, H - 22, 14, '#aaa', null);
+  if (bar > 20 && !touchMode) txt('ENTER = skip', W - 80, H - 22, 14, '#aaa', null);
 }
 
 // ---------------------------------------------------------------- bug types of this world
