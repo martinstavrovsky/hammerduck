@@ -154,6 +154,13 @@ const SFX = {
       tone(f * 2, 0.14, 'sine', 0.03, 0.9, w + 0.02, null, 0.03);
     });
   },
+  villain: () => { // silly low "bwa-ha-ha-ha"
+    if (!actx) return; const t = actx.currentTime;
+    [150, 140, 131, 122, 115].forEach((f, i) => { noise(0.04, 0.05, 900, t + i * 0.16); tone(f, 0.13, 'square', 0.09, 0.82, t + i * 0.16 + 0.02, null, 0.02); });
+  },
+  rumble: () => { noise(0.6, 0.35, 120); tone(55, 0.6, 'sawtooth', 0.12, 0.7); },
+  whoosh: () => { noise(0.15, 0.2, 2200); tone(500, 0.15, 'triangle', 0.06, 2); },
+  angry: () => { tone(330, 0.12, 'square', 0.1, 1.5); tone(392, 0.16, 'square', 0.1, 1.4, actx && actx.currentTime + 0.14); },
   ready: () => { if (!actx) return; const t = actx.currentTime; [660, 990, 1320].forEach((f, i) => tone(f, 0.12, 'triangle', 0.09, 1, t + i * 0.06)); },
   denied: () => tone(160, 0.08, 'square', 0.05, 0.8),
   throwIt: () => { noise(0.18, 0.3, 2400); tone(500, 0.18, 'triangle', 0.12, 1.8); },
@@ -222,6 +229,7 @@ function currentTrack() {
   if (state === 'play' && boss && boss.dead) return 'hero';
   if (state === 'title' || state === 'play') return (boss && boss.active && !boss.dead) ? 'boss' : 'main';
   if (state === 'win' && winT > 2.6) return 'calm';
+  if (state === 'intro') return introT < 1.9 ? 'calm' : (introT > 2.5 && introT < 11.2) ? 'boss' : null;
   return null;
 }
 function music() {
@@ -252,7 +260,7 @@ const EDEF = {
 };
 const STAND_H = 48, CROUCH_H = 30;
 const START_LIVES = 3, MAX_LIVES = 9;
-let goT = 0, sunJoy = 0, laughT = 0;
+let goT = 0, sunJoy = 0, laughT = 0, introT = 0;
 const allSeeds = () => stats.seeds >= L.totalSeeds;
 const ARENA_L = 201, ARENA_R = 227, GOAL_COL = 238;
 
@@ -335,7 +343,7 @@ function buildLevel() {
   L.totalSeeds += 6; // dropped by the Big Bug
   boss = bug('boss', 219); boss.sx = boss.x; boss.sy = boss.y; boss.active = false; boss.state = 'sleep'; boss.faceT = 0; boss.zt = 0;
   // 9 home
-  sign(232, 'Home Sweet Nest ♥');
+  sign(232, 'Ducklings ahead! Hurry! ♥');
   const gy = groundTop(246);
   L.family = { nestX: 246.5 * TS, y: gy, papa: { x: 244.3 * TS }, kids: [245.5, 246.2, 246.9, 247.6].map((c, i) => ({ x: c * TS, ph: i * 0.9 })) };
 
@@ -433,7 +441,8 @@ document.addEventListener('fullscreenchange', resize); document.addEventListener
 function onPress(code) {
   if (code === 'KeyF') { toggleFullscreen(); return; }
   if (code === 'KeyM') { muted = !muted; if (master) master.gain.value = muted ? 0 : 0.55; return; }
-  if (state === 'title' && (code === 'Enter' || code === 'Space')) { resetGame(); state = 'play'; jumpBuf = 0; return; }
+  if (state === 'title' && (code === 'Enter' || code === 'Space')) { resetGame(); state = 'intro'; introT = 0; return; }
+  if (state === 'intro' && (code === 'Enter' || code === 'Space' || code === 'Escape')) { startPlay(); return; }
   if (state === 'play' && (code === 'Escape' || code === 'KeyP')) { state = 'pause'; return; }
   if (state === 'pause' && (code === 'Escape' || code === 'KeyP' || code === 'Enter')) { state = 'play'; return; }
   if (state === 'gameover' && goT > 1 && (code === 'Enter' || code === 'Space')) { resetGame(); state = 'play'; jumpBuf = 0; return; }
@@ -1612,6 +1621,136 @@ function drawWin() {
   if (winT > 3 && Math.floor(gT * 2) % 2 === 0) txt('Press ENTER to play again', W / 2, allSeeds() ? 386 : 352, 26, '#ffd23f', OUT);
 }
 
+// =====================================================================
+//  INTRO: the Big Bug kidnaps the family. Silly, loud, ~15 s, skippable.
+// =====================================================================
+const INTRO_END = 14.8, HOME_NEST_X = 330, BOSS_LAND_X = 600;
+const KID_HOME = [297, 319, 341, 363], PAPA_HOME = 440, HERO_X = 150;
+function startPlay() {
+  P.x = heroX(Math.min(introT, INTRO_END)) - P.w / 2; P.y = groundTop(Math.floor(P.x / TS)) - P.h; P.face = 1; camX = 0;
+  state = 'play'; jumpBuf = atkBuf = downBuf = throwBuf = 0; parts.length = 0; pops.length = 0; shake = 0; }
+function introBoss(t) {
+  const gy = groundTop(10);
+  if (t < 2.4) return null;
+  let x = BOSS_LAND_X, y = gy, dir = -1;
+  if (t < 2.9) y = lerp(-160, gy, Math.pow((t - 2.4) / 0.5, 2));
+  if (t > 7.8 && t < 9.4) y -= Math.abs(Math.sin(t * 11)) * 8;
+  if (t >= 9.4) dir = 1;
+  if (t > 9.6) x += Math.pow(t - 9.6, 2) * 450 + (t - 9.6) * 120;
+  return { x, y, dir };
+}
+function kidSlot(b, i) { return { x: b.x + [-40, -16, 8, 32][i] * (b.dir < 0 ? 1 : -1), y: b.y - 100 }; }
+function updateIntro(dt) {
+  const p = introT; introT += dt;
+  const hit = t => p < t && introT >= t, gy = groundTop(10);
+  if (hit(1.95)) { shake = 6; SFX.rumble(); }
+  if (hit(2.4)) { shake = 9; SFX.rumble(); }
+  if (hit(2.9)) { shake = 22; SFX.slam(); SFX.roar(); dust(BOSS_LAND_X, gy, 22, 3); }
+  if (hit(3.3)) SFX.villain();
+  for (let i = 0; i < 5; i++) if (hit(6.2 + i * 0.22)) SFX.whoosh();
+  if (hit(6.25)) SFX.hurt();
+  if (hit(7.9)) SFX.villain();
+  if (hit(9.6)) SFX.jump();
+  if (hit(11.0)) { SFX.angry(); shake = 5; }
+  if (hit(13.0)) { SFX.checkpoint(); confetti(W / 2, 260, 30); }
+  const b = introBoss(introT);
+  if (b && introT > 9.6 && b.x < 1150 && Math.random() < dt * 40) addPart({ type: 'dust', x: b.x - 50 + rand(-10, 10), y: b.y - 4, vx: rand(-160, -40), vy: rand(-80, -10), drag: 4, life: .5, size: rand(8, 14), color: '#fff' });
+  if (introT > 10.6 && introT < 13 && Math.random() < dt * 6) addPart({ type: 'spark', x: heroX(introT) + rand(-30, 30), y: gy - 70 + rand(-20, 20), vx: rand(-60, 60), vy: rand(-120, -40), drag: 3, life: .4, size: 4, color: '#ff6b2b' });
+  if (introT >= INTRO_END) startPlay();
+}
+function heroX(t) { return t < 9.7 ? HERO_X : HERO_X + Math.min(1, (t - 9.7) / 0.9) * 275; }
+function drawNest(x, y, empty) {
+  ell(x, y - 6, 70, 18, '#8a5a2a', OUT, 3);
+  if (empty) { // a lonely feather in the empty nest
+    ctx.save(); ctx.translate(x + 10, y - 14); ctx.rotate(-0.5); ell(0, 0, 10, 3.5, '#fff0a6', OUT, 1.5); ctx.restore();
+  }
+}
+function drawNestFront(x, y) {
+  ctx.fillStyle = '#a8703a'; ctx.strokeStyle = OUT; ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.ellipse(x, y - 4, 64, 15, 0, 0, Math.PI); ctx.fill(); ctx.stroke();
+  ctx.strokeStyle = '#6b3d1e'; ctx.lineWidth = 2;
+  for (let i = 0; i < 8; i++) { const xx = x - 50 + i * 13; ctx.beginPath(); ctx.moveTo(xx, y - 2); ctx.lineTo(xx + 11, y + 8); ctx.stroke(); }
+}
+function bubble(x, y, text, t0, opt = {}) {
+  const t = introT - t0; if (t < 0) return;
+  const lines = text.split('\n'), size = opt.size || 18;
+  ctx.font = `bold ${size}px ${FONT}`;
+  const w = Math.max(...lines.map(l => ctx.measureText(l).width)) + 30, h = lines.length * (size + 6) + 18;
+  const s = easeOut(Math.min(1, t / 0.15)) * (opt.shake ? 1 + Math.sin(gT * 30) * 0.02 : 1);
+  ctx.save(); ctx.translate(x, y); ctx.scale(s, s);
+  ctx.fillStyle = opt.bg || '#fff'; ctx.strokeStyle = OUT; ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.roundRect(-w / 2, -h - 14, w, h, 16); ctx.fill(); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(-10, -16); ctx.lineTo(0, 0); ctx.lineTo(10, -16); ctx.closePath(); ctx.fill(); ctx.stroke();
+  ctx.fillRect(-12, -19, 24, 5);
+  lines.forEach((l, i) => txt(l, 0, -h - 14 + 9 + (size + 6) * (i + 0.5) + 2, size, opt.color || '#3b2410', null));
+  ctx.restore();
+}
+function drawIntro() {
+  const t = introT, gy = groundTop(10), b = introBoss(t);
+  const scared = t > 1.95 && t < 2.9;
+  // nest (back)
+  drawNest(HOME_NEST_X, gy, t > 7.2);
+  // hero
+  const running = t > 9.7 && t < 10.6;
+  let ham = REST + Math.sin(gT * 3) * 0.04;
+  if (t > 10.6) ham = -1.57 + Math.sin(gT * 22) * 0.18;
+  const hop = scared ? Math.abs(Math.sin((t - 1.95) * 9)) * 14 : (t > 10.6 && t < 13 ? Math.abs(Math.sin(gT * 9)) * 6 : 0);
+  drawDuck({ x: heroX(t), y: gy - hop, face: 1, scale: 1.12, run: t * 14, moving: running, body: '#ffd23f', light: '#fff0a6', dark: '#f0b400',
+    acc: 'bandana', ham, happy: t < 1.95, determined: t > 2.9, blink: false });
+  // papa
+  const papaU = clamp((t - 7.08) / 0.45, 0, 1);
+  let px = PAPA_HOME, py = gy, pface = t > 2.9 ? 1 : -1;
+  if (b && t > 7.08) { const sl = { x: b.x + 52 * (b.dir < 0 ? 1 : -1), y: b.y - 96 }; px = lerp(PAPA_HOME, sl.x, papaU); py = lerp(gy, sl.y, papaU) - Math.sin(Math.PI * papaU) * 120; pface = -b.dir; }
+  drawDuck({ x: px, y: py - (scared ? Math.abs(Math.sin((t - 2) * 9)) * 12 : 0), face: pface, scale: 1.1, body: '#ffffff', light: '#f2f6ff', dark: '#dfe6f5', acc: 'cap', happy: t < 1.95, wave: t > 7.5 && t < 11 });
+  // ducklings
+  KID_HOME.forEach((hx, i) => {
+    const g0 = 6.2 + i * 0.22, u = clamp((t - g0) / 0.45, 0, 1);
+    let x = hx, y = gy - 8, face = -1, hop = t < 1.95 ? Math.max(0, Math.sin(gT * 3 + i)) * 5 : scared ? Math.abs(Math.sin((t - 2) * 10 + i)) * 10 : 0;
+    if (b && t > g0) { const sl = kidSlot(b, i); x = lerp(hx, sl.x, u); y = lerp(gy - 8, sl.y, u) - Math.sin(Math.PI * u) * 110; face = -b.dir; hop = u >= 1 ? Math.abs(Math.sin(gT * 14 + i)) * 4 : 0; }
+    drawDuckling(x, y, face, hop, t > 6.5);
+  });
+  drawNestFront(HOME_NEST_X, gy);
+  // the Big Bug
+  if (b) {
+    drawBug({ type: 'boss', x: b.x - 60, y: b.y - 88, w: 120, h: 88, dir: b.dir, t: t > 9.6 ? t * 2.5 : t * 0.4, dead: false, inv: 0, active: true, hp: 5 });
+    if (t > 6.6) { // net sack with the family inside
+      ctx.save(); ctx.globalAlpha = 0.85;
+      const sx = b.x + 6 * (b.dir < 0 ? 1 : -1);
+      ell(sx, b.y - 94, 74, 15, 'rgba(160,110,60,.6)', OUT, 3);
+      ctx.strokeStyle = OUT; ctx.lineWidth = 1.5;
+      for (let k = -4; k <= 4; k++) { ctx.beginPath(); ctx.moveTo(sx + k * 16 - 6, b.y - 108); ctx.lineTo(sx + k * 16 + 6, b.y - 80); ctx.stroke(); }
+      ctx.strokeStyle = '#6b3d1e'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(sx - 70, b.y - 92); ctx.lineTo(sx - 40, b.y - 70); ctx.moveTo(sx + 70, b.y - 92); ctx.lineTo(sx + 40, b.y - 70); ctx.stroke();
+      ctx.restore();
+    }
+    if (t > 7.8 && t < 9.4) { // nyah nyah tongue
+      const hx = b.x + b.dir * 72, hy = b.y - 24;
+      ell(hx, hy, 12 + Math.sin(gT * 20) * 3, 6, '#ff6b8b', OUT, 2);
+    }
+  }
+  // "?!"
+  if (scared) { txt('?!', HERO_X + 6, gy - 92, 28, '#ff4d4d', OUT); txt('?!', PAPA_HOME, gy - 90, 26, '#ff4d4d', OUT); txt('?!', 330, gy - 60, 24, '#ff4d4d', OUT); }
+  // speech
+  if (t > 0.3 && t < 1.95) bubble(330, gy - 52, 'We love you, Mama! ♥', 0.3);
+  if (t > 1.0 && t < 1.95) bubble(HERO_X + 10, gy - 92, 'Quack! What a lovely day!', 1.0);
+  if (t > 3.3 && t < 5.7 && b) bubble(b.x - 20, b.y - 120, 'MWAHAHA! What cute little\nducklings you have there!', 3.3, { color: '#c2185b', shake: true });
+  if (t > 5.6 && t < 6.2) bubble(330, gy - 52, 'Eek!', 5.6);
+  if (t > 6.3 && t < 7.8 && b) bubble(b.x, b.y - 165, 'HEEELP! MAMAAA!', 6.3, { size: 20, shake: true });
+  if (t > 7.9 && t < 9.4 && b) bubble(b.x - 30, b.y - 165, "You'll NEVER catch me,\nHAMMER DUCK! Nyah nyah!", 7.9, { color: '#c2185b', shake: true });
+  if (t > 9.4 && t < 10.5 && b) bubble(Math.min(b.x, 900), b.y - 165, 'BYE-BYEEE!', 9.4, { color: '#c2185b', size: 22 });
+  if (t > 10.2 && t < 11.2) txt('Mamaaaa...!', 960, gy - 170 - (t - 10.2) * 20, 20, '#fff', OUT);
+  if (t > 11.0 && t < 13.2) bubble(heroX(t) + 10, gy - 112, "GRRR! Hold on, kids...\nMAMA'S COMING!", 11.0, { size: 20, color: '#e8262e', shake: true });
+}
+function drawIntroOverlay() {
+  const bar = 44 * Math.min(1, introT * 2) * (introT > INTRO_END - 0.4 ? (INTRO_END - introT) / 0.4 : 1);
+  ctx.fillStyle = '#000'; ctx.fillRect(0, 0, W, bar); ctx.fillRect(0, H - bar, W, bar);
+  if (introT < 1.8) txt('Meanwhile, on sunny Duck Island...', W / 2, 90, 26, '#fff', OUT);
+  if (introT > 13.0) {
+    const s = easeOut(Math.min(1, (introT - 13) / 0.3));
+    ctx.save(); ctx.translate(W / 2, 200); ctx.scale(s, s); rainbowTitle('GET THEM BACK!', 0, 0, 76, gT); ctx.restore();
+  }
+  if (bar > 20) txt('ENTER = skip', W - 80, H - 22, 14, '#aaa', null);
+}
+
 function render() {
   ctx.setTransform(scale * dpr, 0, 0, scale * dpr, 0, 0);
   const sx = (Math.random() - .5) * shake, sy = (Math.random() - .5) * shake;
@@ -1623,19 +1762,24 @@ function render() {
     if (d.x < cx - 140 || d.x > cx + W + 140) continue;
     if (d.type === 'palm') drawPalm(d); else if (d.type === 'bush') drawBush(d); else if (d.type === 'flower') drawFlower(d); else drawShell(d);
   }
-  for (const s of L.signs) if (Math.abs(s.x - cx - W / 2) < W) drawSign(s);
+  if (state !== 'intro') for (const s of L.signs) if (Math.abs(s.x - cx - W / 2) < W) drawSign(s);
   for (const c of L.cps) if (Math.abs(c.x - cx - W / 2) < W) drawCheckpoint(c);
   drawTiles(cx);
   for (const s of L.springs) drawSpring(s);
   for (const m of L.movers) drawMover(m);
+  if (state !== 'intro' && state !== 'title' && cx < 700) { drawNest(HOME_NEST_X, groundTop(6), true); drawNestFront(HOME_NEST_X, groundTop(6)); }
   drawFamily();
-  for (const it of L.items) if (Math.abs(it.x - cx - W / 2) < W) drawItem(it);
-  for (const e of L.enemies) if (Math.abs(e.x - cx - W / 2) < W) drawBug(e);
-  if (state !== 'title') drawPlayer();
+  if (state !== 'intro') {
+    for (const it of L.items) if (Math.abs(it.x - cx - W / 2) < W) drawItem(it);
+    for (const e of L.enemies) if (Math.abs(e.x - cx - W / 2) < W) drawBug(e);
+  }
+  if (state === 'intro') drawIntro();
+  else if (state !== 'title') drawPlayer();
   drawThrown();
   drawParts();
   drawPops();
   ctx.restore();
+  if (state === 'intro') { drawIntroOverlay(); return; }
   if (state === 'title') { drawTitle(); return; }
   if (sunJoy > 0.01) {
     ctx.save(); ctx.globalCompositeOperation = 'lighter';
@@ -1671,6 +1815,7 @@ function frame(now) {
   } else {
     acc = 0; gT += dt;
     if (state === 'gameover') { goT += dt; updateFx(dt); }
+    if (state === 'intro') { updateIntro(dt); updateFx(dt); shake = Math.max(0, shake - dt * 40); }
     if (state === 'title') { titleT += dt; updateMovers(dt); updateFx(dt); shake = Math.max(0, shake - dt * 40); }
   }
   music();

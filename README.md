@@ -1,7 +1,8 @@
 # 🦆🔨 Hammer Duck: Bug Island Rescue
 
-A colorful 2D platformer that runs in the browser. Bugs have invaded Duck Island! Grab your huge wooden hammer,
-smash your way across the island, beat the Big Bug boss and get home to your duckling family.
+A colorful 2D platformer that runs in the browser. It's a lovely day on Duck Island until the Big Bug crashes in,
+stuffs Hammer Duck's whole family into a net and runs off yelling *"You'll NEVER catch me, HAMMER DUCK! Nyah nyah!"*
+Grab your huge wooden hammer, smash your way across the island, beat the Big Bug and get your family back!
 
 ![Title screen](docs/screenshots/title.png)
 
@@ -30,6 +31,7 @@ and all music and sound effects are generated live with the Web Audio API.
 
 ## ✨ Features
 
+- **A silly story intro** where the Big Bug kidnaps the family (press Enter to skip it).
 - **A hero duck with a huge hammer:** swing it, slam down from the air, or throw it like a boomerang:
   the thrown hammer spins forward, smashes everything in its path and flies back to her wing.
   The throw is a special move that recharges in 5 seconds (see the meter in the top bar).
@@ -43,6 +45,7 @@ and all music and sound effects are generated live with the Web Audio API.
 - **The ending:** the duckling family celebrates with confetti while a calm lullaby plays.
 - Works with keyboard and game controllers; adapts to any window size and full screen.
 
+![Intro: the Big Bug kidnaps the family](docs/screenshots/intro.png)
 ![Hammer throw](docs/screenshots/throw.png)
 ![Lagoon](docs/screenshots/lagoon.png)
 ![Boss fight](docs/screenshots/boss.png)

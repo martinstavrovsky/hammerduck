@@ -4,7 +4,9 @@ A 2D platformer for a family (played on a MacBook Air M4, in Safari/Chrome, keyb
 Bright, cartoony island style with comic "SMASH!" pop-ups and faces on bushes and clouds. All original art;
 do not copy any existing game's characters, levels or look.
 Hero: a yellow duck (mama) with a red bandana and a huge wooden hammer. Bugs invade her island; the hammer is the
-only way to defeat them. At the end of the level her duckling family (papa duck in a blue cap + 4 ducklings in a nest) celebrates.
+only way to defeat them. **Story:** in the intro the Big Bug (the level-1 boss) kidnaps her family (papa duck in a blue cap
++ 4 ducklings) in a net on its back and runs off taunting her; she chases it across the island, beats it, and the
+family celebrates at the end. **Tone:** silly, infantile, feel-good action fun. Never scary or serious.
 
 ## Files
 - `index.html`: the entire game in one file: canvas 2D, Web Audio, no dependencies, no assets. Open it in a browser.
@@ -15,7 +17,8 @@ only way to defeat them. At the end of the level her duckling family (papa duck 
 constants → input (keys, gamepad) → audio (`tone`, `noise`, `SFX`, music `TRACKS`) → level (`buildLevel`) →
 player/physics (`moveBody`, `updatePlayer`) → combat (`hitEnemy`, `combat`, hammer throw) → enemies
 (`updateEnemies`, `updateWasp`, `updateBoss`) → `step()` → rendering (background, tiles, decor, `drawDuck`,
-`drawBug`, HUD, title/win/game-over/pause screens) → main loop.
+`drawBug`, HUD, title/win/game-over/pause screens) → intro cutscene (`updateIntro`, `drawIntro`) → `render` → main loop.
+States: `title` → `intro` (~15 s, Enter skips) → `play` ⇄ `pause` → `win` | `gameover`. Restarting after a win or game over skips the intro.
 Fixed timestep 1/120 s. Logical resolution 1024×576, scaled to the window.
 
 ## Level building (`buildLevel`)
@@ -44,7 +47,9 @@ Fixed timestep 1/120 s. Logical resolution 1024×576, scaled to the window.
   sleeps until you re-enter the arena. Crates and seeds stay collected.
 - **Sunseeds:** the level total must be **exactly 100**, counting placed seeds + crate seeds (3 each) + the boss drop (6).
   Collecting all 100 makes the sun laugh at the ending (visual only, NO laugh sound), the sky turns clear deep blue and the clouds go away.
-- **Music:** `main` (cheerful island) on the title and level → `boss` (fast, dramatic minor) during the fight →
+- **Intro:** scripted with timestamps in `updateIntro`/`drawIntro` (speech bubbles via `bubble()`); the hero then starts
+  playing from where she stopped. An empty nest with a feather stays at the start of the level.
+- **Music:** `calm` → `boss` during the intro; `main` (cheerful island) on the title and level → `boss` (fast, dramatic minor) during the fight →
   `hero` (triumphant march) after beating the boss → victory jingle → `calm` (lullaby) with the family.
 - Kid-friendly difficulty, but the user asked for the fast boss (2× speed) and the swooping wasps.
 
