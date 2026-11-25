@@ -1,67 +1,94 @@
-# Hammer Duck: Bug Island Rescue
+# Hammer Duck
+
+Repo: https://github.com/martinstavrovsky/hammerduck (public, branch `main`). Work on a branch, open a PR, merge.
 
 A 2D platformer for a family (played on a MacBook Air M4, in Safari/Chrome, keyboard or DualShock).
-Bright, cartoony island style with comic "SMASH!" pop-ups and faces on bushes and clouds. All original art;
+Bright, cartoony style with comic "SMASH!" pop-ups and faces on bushes, clouds, the sun and the moon. All original art;
 do not copy any existing game's characters, levels or look.
-Hero: a yellow duck (mama) with a red bandana and a huge wooden hammer. Bugs invade her island; the hammer is the
-only way to defeat them. At the end of the level her duckling family (papa duck in a blue cap + 4 ducklings in a nest) celebrates.
+**Tone:** silly, infantile, feel-good action fun. Never scary or serious.
 
-## Files
-- `index.html`: the entire game in one file: canvas 2D, Web Audio, no dependencies, no assets. Open it in a browser.
-- `tools/harness.js`: headless Node harness (fake canvas/audio/gamepad/DOM) that runs the real game code.
-- `tools/smoke-test.js`: regression test. Run `node tools/smoke-test.js` after every change. It must print "All passed".
+**Hero:** Hammer Duck, a yellow mama duck with a red bandana and a huge wooden hammer. The hammer is the only way to beat bugs.
+**Story so far:**
+1. **Duck Island** (world 1): in the intro the Big Bug kidnaps her family (papa duck in a blue cap + 4 ducklings)
+   in a net and runs off taunting her. She beats it and the family celebrates.
+2. **Pigeon story:** an emergency pigeon brings a letter from her little brother **Drake** (yellow, green beanie,
+   red scarf; wife **Daisy**, white with pink earmuffs; 3 ducklings in scarves). The pigeon carries her to Frosty Isle.
+3. **Frosty Isle** (world 2): the **Bigger Bug** (the Big Bug's big brother: ice-blue, viking helmet, white mustache)
+   cages Drake's family. "You beat my little brother? I'm the BIGGER BUG! You'll NEVER defeat ME!"
+   She beats him, smashes the ice cage, and Drake's family thanks her. Then "THE END ... for now!".
 
-## Layout of index.html (in order)
-constants → input (keys, gamepad) → audio (`tone`, `noise`, `SFX`, music `TRACKS`) → level (`buildLevel`) →
-player/physics (`moveBody`, `updatePlayer`) → combat (`hitEnemy`, `combat`, hammer throw) → enemies
-(`updateEnemies`, `updateWasp`, `updateBoss`) → `step()` → rendering (background, tiles, decor, `drawDuck`,
-`drawBug`, HUD, title/win/game-over/pause screens) → main loop.
-Fixed timestep 1/120 s. Logical resolution 1024×576, scaled to the window.
+The user asked that every new world be **clearly distinctive in every way**: different art, mechanics, terrain,
+bugs, boss mechanics and music. Don't reuse hills/crates/springs-style layouts from earlier worlds.
 
-## Level building (`buildLevel`)
-- Tile grid: `TS = 48` px, `ROWS = 12`, width `LW = 262` columns. Row 11 is the bottom; falling below = water death.
-- Tile codes: 0 empty, 1 ground (grass top drawn automatically), 2 one-way wooden plank, 3 crate (breakable),
-  4 stone block, 6 bug-goo gate (solid, removed when the boss dies).
-- Helpers: `ground(x0, x1, h)`, `plat(x, row, w)`, `block(x, row, w, h)`, `crate(x, row, loot)` (loot `'seeds'` (3) | `'heart'` | `'none'`),
-  `seeds(x, row, n)`, `seedsV`, `seedArc`, `bug(type, col, row?)`, `spring(col, row)`, `cp(col)` checkpoint,
-  `sign(col, text)`, `mover(x1, y1, x2, y2, wTiles, periodSec)`.
-- Bug types (`EDEF`): `beetle`, `ladybug` (fast), `armor` (2 hits; after the first hit it runs 4.5× faster),
-  `fly` (wasp: hovers, then swoops to head height; ducking dodges it), `boss` (5 hp, in the arena `ARENA_L = 201` to `ARENA_R = 227`).
-- Physics reach: jump ≈ 168 px (3.5 tiles high), gaps up to about 4–5 tiles; a spring launches about 7 tiles high.
-- Current layout: start beach → hills → lagoon with moving rafts → crate fields → stone towers & springs →
-  bug swarm → boss arena → home beach with the family (`GOAL_COL = 238`).
-- Debug: `index.html#x=150` starts at column 150; `index.html#win` jumps to the ending.
+## Files (plain `<script>` files, no modules, no build: double-clicking index.html must keep working)
+- `index.html`: canvas + script tags in load order: engine → worlds → story → main.
+- `src/engine.js`: shared engine (constants, input, audio + music scheduler, physics, the duck & hammer, enemy
+  framework, combat, HUD, title/win/game-over/pause screens, render, main loop).
+- `worlds/island.js` (world 1) and `worlds/frost.js` (world 2, wrapped in an IIFE): everything world-specific.
+- `src/story.js`: the pigeon scene between worlds (`STORY`) + `drawPigeon`.
+- `src/main.js`: boot + debug hashes.
+- `tools/harness.js`: headless Node harness: loads the same scripts as index.html with fake canvas/audio/gamepad.
+- `tools/smoke-test.js` (world 1) and `tools/world2-test.js` (world 2 + story): both must print "All passed".
+- `tools/stage.html`: screenshot staging page (freeze any scene). `docs/screenshots/`: README images.
+
+## World API (`registerWorld({...})`, order = world number)
+`name, width, startCol, goalCol, arena {L, R}, winStopX, winCamX, bossName, bossDefeatText, gateColor, hudBug,
+heroScarf?, seedSpark?, gameOverLine, win {title, line, seedName, bossLabel, allLine}, tracks {main, boss, hero, calm},
+build(B), drawBackground(cx,cy), drawWater(cx), drawTile(t,x,y,px,py), drawDecor(d), drawFamily(), drawWorld?(),
+drawScreen?(), update?(dt), onHammerArea?(rect, src), onRespawn?(), drawSeed?(it,bob), drawSeedIcon?(x,y),
+winUpdate?(dt, before), intro {end, update, draw, overlay, heroX(t), track(t)}`.
+- Bug types go into `EDEF[type] = { w, h, hp, speed?, fly?, boss?, fallsWhenDead?, init?(e,col,row), update?(e,dt),
+  draw(e), canHit?(e, src, dir), onHurt?(e,dir,src), harmless?(e), hurtInv?, hurtWords? }`.
+  Hit sources: `'swing' | 'slam' | 'throw' | 'slide' | 'shot' | 'boss'`.
+- Boss helpers: `shouldWakeBoss(b)`, `wakeBoss(b, text)` (closes the left arena gate), `bossSnore(b, dt)`.
+- Music: `tracks.x = { bpm, play(step, time, beatLen) }`, scheduled in 8th-note steps.
+- States: `title` → `intro` → `play` ⇄ `pause` → `win` → (`story` → next world's `intro`) | THE END → `title`; `gameover` restarts the current world.
+  `startWorld(i, withIntro, carryLives)`. Finishing a world unlocks the next (`localStorage`), and the title offers "Press 2".
+
+## Level building (`build(B)`)
+- Grid: `TS = 48`, `ROWS = 12`. Ground top for height 2 is row 10 (y = 480); water surface y = 536; falling in = lose a life.
+- Tiles: 0 empty · 1 grass ground · 2 one-way plank · 3 crate · 4 stone · 6 boss gate · 7 snow · 8 ice (slippery) ·
+  9 cracking ice · 10 ice block. `SOLID()` / `ICY()` in the engine.
+- Builder `B`: `ground(a,b,h,tile=1)`, `plat`, `block(x,row,w,h,tile=4)`, `crate(x,row,loot)`, `seeds(x,row,n)`, `seedsV`, `seedArc`,
+  `bug(type,col,row?)`, `spring`, `cp(col)`, `sign(col,text)`, `mover(...)`, `gate(col)`. Movers may have custom `update/draw` (floes).
+- Reach: jump ≈ 168 px (3.5 tiles); gaps ≤ 4–5 tiles; spring ≈ 7 tiles; Frosty geyser ≈ 8 tiles.
+- **Collectibles: each world has exactly 100** (placed + crate seeds + 6 boss drop). Collecting all 100 triggers a special sky
+  at the ending (world 1: laughing sun, clear sky; world 2: rainbow aurora, the moon wakes up and winks, the snow stops).
+- Debug: `#x=150` (world 1) · `#w=2&x=80` (world 2) · `#win` / `#w=2&win`.
 
 ## Design decisions agreed with the user (keep these unless asked)
 - **Controls (keyboard):** ← → / A D walk · SPACE jump (↑/W also) · H hammer (X also) · J or ↓ in the air = slam ·
-  ↓ on the ground = crouch · G = hammer throw · F full screen (also double-click) · M mute · P/Esc pause.
+  ↓ on the ground = crouch (on ice while moving = belly slide) · G = hammer throw · F full screen · M mute · P/Esc pause · Enter skips cutscenes.
 - **Controller (standard mapping):** Cross/A jump · Circle/B hammer · Square/X throw · Triangle/Y slam · stick down crouch/slam · Start.
-- **Hammer throw:** Thor-style; it spins forward, smashes bugs and crates both ways, and boomerangs back. It's a special move:
-  `THROW_RELOAD = 5` s, counted from the catch. Loaded at game start and after a respawn. HUD meter shows the reload.
-- **Lives:** start with 3 lives, 3 hearts each. A heart found while hearts are full gives +1 life ("1-UP", max 9).
-  0 lives → GAME OVER → Enter restarts the level from the beginning.
-- **On death:** respawn at the last checkpoint; **all bugs respawn** (`L.spawns`); the boss resets to full health and
-  sleeps until you re-enter the arena. Crates and seeds stay collected.
-- **Sunseeds:** the level total must be **exactly 100**, counting placed seeds + crate seeds (3 each) + the boss drop (6).
-  Collecting all 100 makes the sun laugh at the ending (visual only, NO laugh sound), the sky turns clear deep blue and the clouds go away.
-- **Music:** `main` (cheerful island) on the title and level → `boss` (fast, dramatic minor) during the fight →
-  `hero` (triumphant march) after beating the boss → victory jingle → `calm` (lullaby) with the family.
-- Kid-friendly difficulty, but the user asked for the fast boss (2× speed) and the swooping wasps.
+- **Hammer throw:** Thor-style boomerang; `THROW_RELOAD = 5` s from the catch; loaded at start and after a respawn.
+- **Lives:** 3 lives × 3 hearts; a heart at full hearts = +1 life (max 9); lives carry over to the next world; game over restarts the current world.
+- **On death:** respawn at the checkpoint; all bugs respawn; the boss resets to full health and sleeps until you re-enter the arena.
+- **World 1:** wasps swoop to head height (duck to dodge); armored beetles run 4.5× faster after the first hit; Big Bug boss 5 hp, 2× speed.
+- **World 2:** ice + belly slide (bowls over bugs), sinking floes, cracking ice, geysers, wind (crouch braces), icicles;
+  snow fleas, ice spiders (duck under them), frost moths (snowballs can be batted back and home in on the thrower), roly-polys
+  (a swing only bounces a rolling one; throw/slam/slide stop it); Bigger Bug: 10 hp, flies + snow bombs, only the throw or a
+  batted bomb hurts him in the air; he dives and gets stuck (harmless and hittable, ~3 hits per dive); angry at ≤ 5 hp (double dives, fleas).
+- **Hammer Duck dresses for the weather:** on Frosty Isle she wears a white puffy coat + blue scarf (`heroCoat`, `heroScarf`).
+- **Feet only move while you walk:** sliding on ice (no direction pressed) keeps the legs still (`P.walking`).
+- **Bugs never fall off platforms or into water on their own:** walkers and rolling roly-polys bounce back at edges,
+  fleas only hop where they can land (`groundAt()`); only a hit from Hammer Duck may knock a bug off.
+- **Music per world:** intro (calm → boss) · main · boss · hero (after the boss) · victory jingle · calm (ending). No laugh sounds.
 
 ## Testing workflow
-1. `node tools/smoke-test.js` must pass after every change. Add a check for each new feature.
-2. For visuals, take headless Chrome screenshots and look at them:
-   `"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --headless=new --disable-gpu --hide-scrollbars --screenshot=out.png --window-size=1024,576 --virtual-time-budget=2500 "file://$PWD/index.html#x=120"`
-   (headless Chrome runs few frames. To show a specific state, make a temporary copy that sets state before `requestAnimationFrame(frame)`).
-3. Test through real key/button presses (`dn`/`up`/`BTN`), not just by calling functions. Calling functions directly once hid a bug.
+1. `node tools/smoke-test.js` and `node tools/world2-test.js` must pass after every change; add checks for new features.
+   Run the world 2 test a few times: the game uses randomness, so make tests deterministic (reset velocities, pick solid ground).
+2. Visuals: headless Chrome screenshots, then look at them:
+   `"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --headless=new --disable-gpu --hide-scrollbars --screenshot=out.png --window-size=1024,576 --virtual-time-budget=2500 "file://$PWD/index.html#w=2&x=60"`
+   For exact moments use `tools/stage.html` (it freezes a scene; see the hash options at its top), e.g.
+   `--screenshot=out.png "file://$PWD/tools/stage.html#intro=2&t=8.4"` or `#w=2&x=196&boss=stuck&bx=199&t=0.6`.
+   Note it keeps calling `render()` every frame: Chrome resizes after load, which clears a single draw.
+3. Test through real key/button presses (`dn`/`up`/`BTN`), not only by calling functions.
 
 ## Gotchas learned
-- Enemies start `awake: false` and combat skips them; anything with custom wake-up logic must set `awake = true`.
-- Speed caps: apply the clamp after acceleration, or the speed grows without limit.
-- In Node 26, `global.navigator` is read-only. The harness uses `Object.defineProperty`.
-- Browsers only allow full screen after a key press or click, not after a gamepad button.
-
-## Ideas for future levels (not built yet)
-The game has one level. A second level needs: `buildLevel(n)` with per-level data, a level-complete screen
-(the family ending maybe only after the final level), carrying lives/seeds between levels, and maybe a new theme
-(e.g. a jungle or volcano part of the island) with new bug types and a new boss. Ask the user for their ideas first.
+- Enemies start `awake: false` and combat skips them; custom wake-up logic must set `awake = true`.
+- Speed caps: clamp after acceleration, or speed grows without limit.
+- The swing hitbox is active for several frames: anything it "bats" must be skipped on the following frames (snowballs).
+- `groundTop(col)` returns the first solid tile from the top, which can be an overhead ice bridge, not the floor.
+- In Node 26, `global.navigator` is read-only; the harness uses `Object.defineProperty`.
+- Browsers only allow full screen after a key press or click, not a gamepad button.
+- Top-level `const`/`let` are shared across the classic script files: avoid duplicate names (frost.js uses an IIFE).

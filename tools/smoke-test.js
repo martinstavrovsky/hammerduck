@@ -2,8 +2,12 @@
 const {G,BTN,fr,dn,up}=require('./harness.js');
 const tap=k=>{dn(k);fr(2);up(k)};
 let fails=0;const ok=(name,cond)=>{console.log((cond?'PASS ':'FAIL ')+name);if(!cond)fails++;};
-dn('Enter');fr(30);const P=G.P;
-ok('game starts in play state',G.state==='play');
+dn('Enter');up('Enter');fr(30);
+ok('ENTER on title starts the intro',G.state==='intro');
+fr(60*3);ok('intro plays boss music once the Big Bug arrives',G.track==='boss');
+fr(60*13);ok('intro ends by itself and the level starts',G.state==='play');
+const P=G.P;
+
 ok('seed total is exactly 100',G.L.totalSeeds===100);
 ok('starts with 3 lives, throw loaded',P.lives===3&&P.throwCD<=0);
 dn('Space');fr(3);ok('SPACE jumps',P.vy<0);up('Space');fr(6);
@@ -20,4 +24,9 @@ for(let i=0;i<5;i++){G.boss.inv=0;G.hitEnemy(G.boss,1);}fr(30);
 ok('boss beaten, gates open, hero music',G.boss.dead&&G.T(201,5)===0&&G.track==='hero');
 P.inv=99;P.x=236*48;P.y=430;dn('ArrowRight');fr(60*4);
 ok('reaching the family wins, calm music',G.state==='win'&&G.track==='calm');
+// skipping the intro (fresh game in a separate process)
+const skip=require('child_process').execFileSync(process.execPath,['-e',`
+  const {G,fr,dn,up}=require(${JSON.stringify(__dirname+'/harness.js')});
+  dn('Enter');up('Enter');fr(60);dn('Enter');up('Enter');fr(5);process.stdout.write(G.state);`]).toString();
+ok('ENTER skips the intro',skip==='play');
 console.log(fails?`\n${fails} FAILED`:'\nAll passed');process.exit(fails?1:0);

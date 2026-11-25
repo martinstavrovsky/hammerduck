@@ -1,6 +1,9 @@
 // Reusable headless harness for the game: fake canvas, audio, gamepad, DOM.
 const fs=require('fs');
-const src=fs.readFileSync(require('path').join(__dirname,'..','index.html'),'utf8').split('<script>')[1].split('</script>')[0];
+const path=require('path');const ROOT=path.join(__dirname,'..');
+const html=fs.readFileSync(path.join(ROOT,'index.html'),'utf8');
+// load the same scripts, in the same order, as index.html does
+const src=[...html.matchAll(/<script src="([^"]+)"><\/script>/g)].map(m=>fs.readFileSync(path.join(ROOT,m[1]),'utf8')).join('\n;\n');
 const noop=()=>{};
 const grad=()=>({addColorStop:noop});
 const ctx=new Proxy({},{get:(t,k)=>k==='measureText'?()=>({width:50}):(k==='createLinearGradient'||k==='createRadialGradient')?grad:(k in t?t[k]:noop),set:(t,k,v)=>{t[k]=v;return true}});
@@ -16,7 +19,7 @@ let notes=0;
 const param=()=>({value:0,setValueAtTime(){},exponentialRampToValueAtTime(){},linearRampToValueAtTime(){}});
 const node=()=>({connect(){},start(){notes++},stop(){},frequency:param(),gain:param(),Q:param(),type:''});
 global.AudioContext=function(){return{get currentTime(){return now/1000},state:'running',sampleRate:44100,destination:{},createGain:node,createOscillator:node,createBiquadFilter:node,createBufferSource:node,createBuffer:()=>({getChannelData:()=>new Float32Array(10)}),resume(){}}};
-(0,eval)(src+`;globalThis.GAME={get P(){return P},get L(){return L},get boss(){return boss},get state(){return state},get thrown(){return thrown},get track(){return curTrack},get sunJoy(){return sunJoy},stats,keys,T:(x,y)=>T(x,y),hitEnemy,hurtPlayer};`);
+(0,eval)(src+`;globalThis.GAME={get P(){return P},get L(){return L},get boss(){return boss},get state(){return state},get thrown(){return thrown},get track(){return trackName()},get WORLD(){return WORLD},WORLDS,startWorld,get introT(){return introT},get storyT(){return storyT},get winT(){return winT},get sunJoy(){return sunJoy},stats,keys,T:(x,y)=>T(x,y),setT:(x,y,v)=>setT(x,y,v),groundTop:c=>groundTop(c),hitEnemy,hurtPlayer};`);
 module.exports={G:globalThis.GAME,BTN,notes:()=>notes,
   fr:n=>{for(let i=0;i<n;i++){now+=16.67;cb(now)}},
   dn:c=>L.keydown.forEach(f=>f({code:c,preventDefault:noop,repeat:false})),
