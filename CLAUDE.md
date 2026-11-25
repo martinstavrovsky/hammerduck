@@ -2,7 +2,8 @@
 
 Repo: https://github.com/martinstavrovsky/hammerduck (public, branch `main`). Work on a branch, open a PR, merge.
 
-A 2D platformer for a family (played on a MacBook Air M4, in Safari/Chrome, keyboard or DualShock).
+A 2D platformer for a family (played on a MacBook Air M4, in Safari/Chrome, keyboard or DualShock; also phones/tablets by touch).
+Live on GitHub Pages: https://martinstavrovsky.github.io/hammerduck/
 Bright, cartoony style with comic "SMASH!" pop-ups and faces on bushes, clouds, the sun and the moon. All original art;
 do not copy any existing game's characters, levels or look.
 **Tone:** silly, infantile, feel-good action fun. Never scary or serious.
@@ -21,14 +22,19 @@ The user asked that every new world be **clearly distinctive in every way**: dif
 bugs, boss mechanics and music. Don't reuse hills/crates/springs-style layouts from earlier worlds.
 
 ## Files (plain `<script>` files, no modules, no build: double-clicking index.html must keep working)
-- `index.html`: canvas + script tags in load order: engine → worlds → story → main.
+- `index.html`: canvas + touch overlay canvas `#tc` + script tags in load order: engine → worlds → story → touch → main.
+  Also the web-app manifest (`manifest.webmanifest`, `icons/`) so "Add to Home Screen" runs full screen.
 - `src/engine.js`: shared engine (constants, input, audio + music scheduler, physics, the duck & hammer, enemy
   framework, combat, HUD, title/win/game-over/pause screens, render, main loop).
 - `worlds/island.js` (world 1) and `worlds/frost.js` (world 2, wrapped in an IIFE): everything world-specific.
 - `src/story.js`: the pigeon scene between worlds (`STORY`) + `drawPigeon`.
+- `src/touch.js`: touch controls (d-pad + JUMP/HAMMER/THROW/SLAM drawn in screen px on `#tc`), tap menus
+  (title, ⏸ pause menu, SKIP button, game over/win), "turn your phone sideways" screen.
 - `src/main.js`: boot + debug hashes.
 - `tools/harness.js`: headless Node harness: loads the same scripts as index.html with fake canvas/audio/gamepad.
-- `tools/smoke-test.js` (world 1) and `tools/world2-test.js` (world 2 + story): both must print "All passed".
+- `tools/smoke-test.js` (world 1), `tools/world2-test.js` (world 2 + story) and `tools/touch-test.js` (fingers via
+  `touchDown/touchMove/touchUp`): all must print "All passed".
+- `tools/icon.html`: renders the app icons (`--window-size=N,N` screenshot of `icon.html#N` into `icons/icon-N.png`, N = 512/192/180).
 - `tools/stage.html`: screenshot staging page (freeze any scene). `docs/screenshots/`: README images.
 
 ## World API (`registerWorld({...})`, order = world number)
@@ -60,6 +66,12 @@ winUpdate?(dt, before), intro {end, update, draw, overlay, heroX(t), track(t)}`.
 - **Controls (keyboard):** ← → / A D walk · SPACE jump (↑/W also) · H hammer (X also) · J or ↓ in the air = slam ·
   ↓ on the ground = crouch (on ice while moving = belly slide) · G = hammer throw · F full screen · M mute · P/Esc pause · Enter skips cutscenes.
 - **Controller (standard mapping):** Cross/A jump · Circle/B hammer · Square/X throw · Triangle/Y slam · stick down crouch/slam · Start.
+- **Touch (phones/tablets):** `touchMode` is on after a finger touch (or on a coarse-pointer device) and off after a key or
+  gamepad press; prompts use `ui(keyText, touchText)` and signs take an optional touch text `sign(col, text, touchText)`.
+  Left 42% of the screen = d-pad (diagonals work: ▶+▼ belly slide); buttons pick the nearest within 2.2 radii.
+  Intro/story skip only via the SKIP button (no accidental skips). Portrait = pause + "turn sideways" screen.
+  Full screen: requested on the title tap (Android/iPad) + landscape lock; iPhone has no Fullscreen API → Add to Home Screen.
+  Canvas resolution is capped at 2× devicePixelRatio. iOS `navigator.audioSession.type = 'playback'` so sound plays on silent.
 - **Hammer throw:** Thor-style boomerang; `THROW_RELOAD = 5` s from the catch; loaded at start and after a respawn.
 - **Lives:** 3 lives × 3 hearts; a heart at full hearts = +1 life (max 9); lives carry over to the next world; game over restarts the current world.
 - **On death:** respawn at the checkpoint; all bugs respawn; the boss resets to full health and sleeps until you re-enter the arena.
@@ -75,12 +87,14 @@ winUpdate?(dt, before), intro {end, update, draw, overlay, heroX(t), track(t)}`.
 - **Music per world:** intro (calm → boss) · main · boss · hero (after the boss) · victory jingle · calm (ending). No laugh sounds.
 
 ## Testing workflow
-1. `node tools/smoke-test.js` and `node tools/world2-test.js` must pass after every change; add checks for new features.
+1. `node tools/smoke-test.js`, `node tools/world2-test.js` and `node tools/touch-test.js` must pass after every change; add checks for new features.
    Run the world 2 test a few times: the game uses randomness, so make tests deterministic (reset velocities, pick solid ground).
 2. Visuals: headless Chrome screenshots, then look at them:
    `"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --headless=new --disable-gpu --hide-scrollbars --screenshot=out.png --window-size=1024,576 --virtual-time-budget=2500 "file://$PWD/index.html#w=2&x=60"`
    For exact moments use `tools/stage.html` (it freezes a scene; see the hash options at its top), e.g.
    `--screenshot=out.png "file://$PWD/tools/stage.html#intro=2&t=8.4"` or `#w=2&x=196&boss=stuck&bx=199&t=0.6`.
+   Touch UI: add `&touch=1` (and `&pause=1`), e.g. `--window-size=844,390` (iPhone) or `1180,820` (iPad).
+   Headless Chrome can't go narrower than ~500 px, so test portrait at e.g. `600,900`.
    Note it keeps calling `render()` every frame: Chrome resizes after load, which clears a single draw.
 3. Test through real key/button presses (`dn`/`up`/`BTN`), not only by calling functions.
 

@@ -91,6 +91,6 @@ const STORY = {
       ctx.fillStyle = `rgba(225,240,255,${a})`; ctx.fillRect(0, 0, W, H);
       if (a > 0.5) txt('Off to FROSTY ISLE!  ❄', W / 2, H / 2, 44, '#2f7fc4', '#ffffff');
     }
-    if (t < 11.9) txt('ENTER = skip', W - 80, H - 22, 14, '#ffffff', OUT);
+    if (t < 11.9 && !touchMode) txt('ENTER = skip', W - 80, H - 22, 14, '#ffffff', OUT);
   },
 };

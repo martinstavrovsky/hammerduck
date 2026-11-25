@@ -1,0 +1,16 @@
+<!doctype html><html><head><meta charset="utf-8"><style>html,body{margin:0;background:#000;overflow:hidden}</style></head><body>
+<canvas id="c"></canvas>
+<script src="../src/engine.js"></script>
+<script>
+// App icon renderer: headless Chrome screenshot at --window-size=N,N of tools/icon.html#N (see README "Icons")
+const N = +(location.hash.slice(1) || 512), k = N / 512;
+function draw() {
+  if (cv.width !== N || cv.height !== N) { cv.width = cv.height = N; } cv.style.width = cv.style.height = N + 'px'; // the engine's resize() fights us
+  ctx.setTransform(k, 0, 0, k, 0, 0);
+  const g = ctx.createLinearGradient(0, 0, 0, 512); g.addColorStop(0, '#5cc8ff'); g.addColorStop(1, '#bff0ff');
+  ctx.fillStyle = g; ctx.fillRect(0, 0, 512, 512);
+  ell(256, 500, 320, 80, '#5fdc4b', OUT, 6);
+  drawDuck({ x: 236, y: 478, face: 1, scale: 3.4, body: '#ffd23f', light: '#fff0a6', dark: '#f0b400', acc: 'bandana', ham: -1.9, determined: true });
+}
+draw(); requestAnimationFrame(function f() { draw(); requestAnimationFrame(f); });
+</script></body></html>

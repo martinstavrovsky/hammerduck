@@ -1,16 +1,18 @@
-<!doctype html><html><head><meta charset="utf-8"><style>html,body{margin:0;background:#000}</style></head><body>
-<canvas id="c"></canvas>
+<!doctype html><html><head><meta charset="utf-8"><style>html,body{margin:0;height:100%;background:#000;overflow:hidden}body{display:flex;align-items:center;justify-content:center}body.touch{align-items:flex-start}</style></head><body>
+<canvas id="c"></canvas><canvas id="tc" style="position:fixed;left:0;top:0;pointer-events:none"></canvas><div id="safe"></div>
 <script>window.onerror=(m,src,l)=>{document.title='ERR '+m+' @'+String(src).split('/').pop()+':'+l;};</script>
 <script src="../src/engine.js"></script>
 <script src="../worlds/island.js"></script>
 <script src="../worlds/frost.js"></script>
 <script src="../src/story.js"></script>
+<script src="../src/touch.js"></script>
 <script>
 // Screenshot staging page: freezes any game moment for headless Chrome screenshots (see CLAUDE.md).
 // staging: #w=2&x=60&t=1.5  (play at column x for t seconds, then freeze)
 //          #intro=2&t=7      (world 2 intro at time t) · #story&t=6 · #win=2&t=3 (&all=1: all 100 collected) · #title&t=1
-//          #w=2&x=196&boss=hover|stuck&bx=200&t=1 (boss state) · &right=1 (hold →) · &slide=1 (then ↓) · &crouch=1
+//          &touch=1 (touch controls; &pause=1 pauses) · #w=2&x=196&boss=hover|stuck&bx=200&t=1 (boss state) · &right=1 (hold →) · &slide=1 (then ↓) · &crouch=1
 const q = Object.fromEntries(location.hash.slice(1).split('&').map(p => p.split('=')));
+if ('touch' in q) touchMode = true; // &touch=1: show the touch controls
 const t = +(q.t || 0.5), steps = Math.round(t / STEP_DT);
 WORLD = WORLDS[(+(q.w || q.intro || q.win || 1)) - 1]; resetGame();
 if ('title' in q) { state = 'title'; titleT = t; }
@@ -23,6 +25,6 @@ else { state = 'play'; const col = +(q.x || 2); P.x = col * TS; P.y = groundTop(
   if (q.crouch) keys.ArrowDown = true; if (q.right) keys.ArrowRight = true;
   if (q.boss) { boss.active = true; boss.awake = true; boss.state = q.boss; boss.st_t = 0.3; boss.x = (+(q.bx || 200)) * TS; boss.y = q.boss === 'stuck' ? groundTop(200) - boss.h : groundTop(200) - 270; boss.tx = boss.x; boss.ty = groundTop(200) - boss.h; for (let y = 0; y < ROWS - 2; y++) setT(WORLD.arena.L, y, 6); P.inv = 99; }
   for (let i = 0; i < steps; i++) { if (q.slide && i === steps - 20) { keys.ArrowRight = false; keys.ArrowDown = true; } step(STEP_DT); if (q.boss) { P.inv = 99; if (q.boss === 'stuck') { boss.state = 'stuck'; boss.st_t = 0.5; } } }
-  shake = 0; if (q.nohud) state = 'intro-nohud'; }
-gT += 0.001; const redraw = () => { render(); requestAnimationFrame(redraw); }; requestAnimationFrame(redraw); render(); document.title = 'OK ' + state + ' ' + cv.width + 'x' + cv.height + ' px=' + ctx.getImageData(500,300,1,1).data.join(',');
+  shake = 0; if (q.nohud) state = 'intro-nohud'; if (q.pause) state = 'pause'; }
+gT += 0.001; const redraw = () => { render(); drawTouch(); requestAnimationFrame(redraw); }; requestAnimationFrame(redraw); render(); document.title = 'OK ' + state + ' ' + cv.width + 'x' + cv.height + ' px=' + ctx.getImageData(500,300,1,1).data.join(',');
 </script></body></html>

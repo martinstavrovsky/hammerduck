@@ -12,7 +12,7 @@ const OUT = '#3b2410';
 const cv = document.getElementById('c'), ctx = cv.getContext('2d');
 let scale = 1, dpr = 1;
 function resize() {
-  dpr = window.devicePixelRatio || 1;
+  dpr = Math.min(2, window.devicePixelRatio || 1); // phones are 3x: 2x looks the same and is much cheaper
   scale = Math.min(innerWidth / W, innerHeight / H);
   cv.style.width = (W * scale) + 'px'; cv.style.height = (H * scale) + 'px';
   cv.width = Math.round(W * scale * dpr); cv.height = Math.round(H * scale * dpr);
@@ -45,9 +45,13 @@ const ATK_KEYS = ['KeyH', 'KeyX'];
 const SLAM_KEYS = ['KeyJ', 'ArrowDown', 'KeyS'];
 const THROW_KEYS = ['KeyG'];
 let pad = {}, padPrev = {};
+// touch controls (src/touch.js) set these; touchMode = the last input was a finger
+const TCH = { left: false, right: false, down: false, jump: false };
+let touchMode = typeof matchMedia === 'function' && matchMedia('(hover: none) and (pointer: coarse)').matches;
+const ui = (keyText, touchText) => touchMode ? touchText : keyText;
 addEventListener('keydown', e => {
   if (['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code)) e.preventDefault();
-  initAudio();
+  initAudio(); touchMode = false;
   if (e.repeat) return;
   keys[e.code] = true;
   if (JUMP_KEYS.includes(e.code)) jumpBuf = 0.13;
@@ -65,6 +69,7 @@ function pollPad() {
   const pads = navigator.getGamepads ? navigator.getGamepads() : [];
   let p = null; for (const x of pads || []) if (x) { p = x; break; }
   if (!p) return;
+  if (p.buttons.some(x => x && x.pressed)) touchMode = false;
   const b = i => !!(p.buttons[i] && p.buttons[i].pressed);
   const ax = p.axes[0] || 0, ay = p.axes[1] || 0;
   pad = { left: ax < -0.4 || b(14), right: ax > 0.4 || b(15), down: ay > 0.5 || b(13), jump: b(0), atk: b(1), throw: b(2), slam: b(3), start: b(9) };
@@ -76,10 +81,10 @@ function pollPad() {
 }
 function input() {
   return {
-    left: keys.ArrowLeft || keys.KeyA || pad.left,
-    right: keys.ArrowRight || keys.KeyD || pad.right,
-    down: keys.ArrowDown || keys.KeyS || pad.down,
-    jump: keys.Space || keys.ArrowUp || keys.KeyW || pad.jump,
+    left: keys.ArrowLeft || keys.KeyA || pad.left || TCH.left,
+    right: keys.ArrowRight || keys.KeyD || pad.right || TCH.right,
+    down: keys.ArrowDown || keys.KeyS || pad.down || TCH.down,
+    jump: keys.Space || keys.ArrowUp || keys.KeyW || pad.jump || TCH.jump,
   };
 }
 
@@ -237,7 +242,7 @@ function makeBuilder() {
   };
   B.spring = (x, row) => L.springs.push({ x: x * TS, y: row * TS, w: TS, h: TS, comp: 0 });
   B.cp = x => L.cps.push({ x: x * TS + TS / 2, y: groundTop(x), active: false, raise: 0 });
-  B.sign = (x, text) => L.signs.push({ x: x * TS + TS / 2, y: groundTop(x), text });
+  B.sign = (x, text, touch) => L.signs.push({ x: x * TS + TS / 2, y: groundTop(x), text, touch }); // touch = text for touch screens
   B.mover = (x1, y1, x2, y2, w, period) => L.movers.push({ x: x1 * TS, y: y1 * TS, ax: x1 * TS, ay: y1 * TS, bx: x2 * TS, by: y2 * TS, w: w * TS, h: 20, period, t: 0, dx: 0, dy: 0 });
   B.gate = col => { for (let y = 0; y < ROWS - 2; y++) setT(col, y, 6); };
   return B;
@@ -331,7 +336,7 @@ function toggleFullscreen() {
   if (d.fullscreenElement || d.webkitFullscreenElement) (d.exitFullscreen || d.webkitExitFullscreen).call(d);
   else { const req = el.requestFullscreen || el.webkitRequestFullscreen; if (req) { const r = req.call(el); if (r && r.catch) r.catch(() => {}); } }
 }
-cv.addEventListener('dblclick', toggleFullscreen);
+cv.addEventListener('dblclick', () => { if (!touchMode) toggleFullscreen(); });
 document.addEventListener('fullscreenchange', resize); document.addEventListener('webkitfullscreenchange', resize);
 function onPress(code) {
   if (code === 'KeyF') { toggleFullscreen(); return; }
@@ -845,12 +850,13 @@ function drawTiles(cx) {
 }
 
 function drawSign(s) {
+  const text = (touchMode && s.touch) || s.text;
   ctx.font = `bold 15px ${FONT}`;
-  const tw = ctx.measureText(s.text).width + 24, bh = 34;
+  const tw = ctx.measureText(text).width + 24, bh = 34;
   ctx.fillStyle = '#6b3d1e'; ctx.fillRect(s.x - 4, s.y - 56, 8, 56);
   ctx.fillStyle = OUT; ctx.beginPath(); ctx.roundRect(s.x - tw / 2 - 3, s.y - 96, tw + 6, bh + 6, 9); ctx.fill();
   ctx.fillStyle = '#ffe3b0'; ctx.beginPath(); ctx.roundRect(s.x - tw / 2, s.y - 93, tw, bh, 7); ctx.fill();
-  ctx.fillStyle = '#6b3d1e'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(s.text, s.x, s.y - 76);
+  ctx.fillStyle = '#6b3d1e'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(text, s.x, s.y - 76);
 }
 function drawCheckpoint(c) {
   ctx.fillStyle = OUT; ctx.fillRect(c.x - 4, c.y - 120, 8, 120);
@@ -1120,7 +1126,7 @@ function drawHUD() {
     ctx.fillStyle = '#ff4d6d'; ctx.beginPath(); ctx.roundRect(bx, by, bw * Math.max(0, boss.hp) / EDEF[boss.type].hp, 18, 9); ctx.fill();
     ctx.strokeStyle = '#fff'; ctx.lineWidth = 3; ctx.beginPath(); ctx.roundRect(bx, by, bw, 18, 9); ctx.stroke();
   }
-  if (muted) txt('🔇 muted (M)', W - 80, 72, 14, '#fff', OUT);
+  if (muted) txt(ui('🔇 muted (M)', '🔇 muted'), W - 80, 72, 14, '#fff', OUT);
 }
 const fmtTime = t => Math.floor(t / 60) + ':' + String(Math.floor(t % 60)).padStart(2, '0');
 
@@ -1153,11 +1159,13 @@ function drawTitle() {
   ctx.beginPath(); ctx.roundRect(560, 222, 420, 262, 22); ctx.fill(); ctx.stroke();
   const lines = ['Bugs are invading Duck Island!', 'Grab your mighty hammer, smash', 'every bug, and get home to your', 'duckling family!'];
   lines.forEach((l, i) => txt(l, 770, 248 + i * 24, 18, '#3b2410', null));
-  const ctl = [['← →', 'walk'], ['SPACE', 'jump'], ['H', 'hammer'], ['G', 'THROW hammer!'], ['J / ↓ in air', 'slam!'], ['↓', 'duck']];
+  const ctl = touchMode ? [['◀ ▶', 'walk'], ['JUMP', 'jump'], ['HAMMER', 'hammer'], ['THROW', 'THROW hammer!'], ['SLAM / ▼ in air', 'slam!'], ['▼', 'duck']]
+    : [['← →', 'walk'], ['SPACE', 'jump'], ['H', 'hammer'], ['G', 'THROW hammer!'], ['J / ↓ in air', 'slam!'], ['↓', 'duck']];
   ctl.forEach(([k, v], i) => { txt(k, 755, 354 + i * 21, 16, '#e8262e', null, 'right'); txt(v, 775, 354 + i * 21, 16, '#3b2410', null, 'left'); });
-  if (Math.floor(titleT * 2) % 2 === 0) txt('Press ENTER or SPACE to start', W / 2, 520, 30, '#ffd23f', OUT);
-  if (unlocked() >= 2) txt('❄  Press 2 to fly straight to FROSTY ISLE  ❄', 770, 497, 15, '#bfefff', OUT);
-  txt('F = full screen   ·   M = mute   ·   P = pause   ·   gamepad works too', W / 2, 557, 14, '#fff', OUT);
+  if (Math.floor(titleT * 2) % 2 === 0) txt(ui('Press ENTER or SPACE to start', 'TAP to start!'), W / 2, 520, 30, '#ffd23f', OUT);
+  if (unlocked() >= 2) txt(ui('❄  Press 2 to fly straight to FROSTY ISLE  ❄', '❄  TAP HERE to fly straight to FROSTY ISLE  ❄'), 770, 497, 15, '#bfefff', OUT);
+  txt(!touchMode ? 'F = full screen   ·   M = mute   ·   P = pause   ·   gamepad works too'
+    : IS_IPHONE && !STANDALONE ? 'Full screen on iPhone: Share ⬆  →  "Add to Home Screen"' : 'a gamepad works too', W / 2, touchMode ? 558 : 557, touchMode ? 18 : 14, '#fff', OUT);
 }
 function drawWin() {
   if (winT < 1.6) return;
@@ -1180,8 +1188,8 @@ function drawWin() {
   if (last && winT > 6) {
     const s2 = easeOut(Math.min(1, (winT - 6) / 0.4));
     ctx.save(); ctx.translate(W / 2, py + 4); ctx.scale(s2, s2); rainbowTitle('THE END ... for now!', 0, 0, 40, gT); ctx.restore();
-    if (Math.floor(gT * 2) % 2 === 0) txt('Thanks for playing! ♥   Press ENTER for the title screen', W / 2, py + 44, 20, '#fff', OUT);
-  } else if (!last && winT > 3 && Math.floor(gT * 2) % 2 === 0) txt('Press ENTER to continue the adventure!', W / 2, py, 26, '#ffd23f', OUT);
+    if (Math.floor(gT * 2) % 2 === 0) txt(ui('Thanks for playing! ♥   Press ENTER for the title screen', 'Thanks for playing! ♥   TAP for the title screen'), W / 2, py + 44, 20, '#fff', OUT);
+  } else if (!last && winT > 3 && Math.floor(gT * 2) % 2 === 0) txt(ui('Press ENTER to continue the adventure!', 'TAP to continue the adventure!'), W / 2, py, 26, '#ffd23f', OUT);
 }
 
 function startPlay() {
@@ -1234,20 +1242,22 @@ function render() {
   drawPops();
   ctx.restore();
   if (WORLD.drawScreen) WORLD.drawScreen(cx, cy);
-  if (state === 'intro') { WORLD.intro.overlay(); return; }
-  if (state === 'story') { STORY.overlay(); return; }
+  if (state === 'intro') { WORLD.intro.overlay(); drawTouchMenus(); return; }
+  if (state === 'story') { STORY.overlay(); drawTouchMenus(); return; }
   if (state === 'title') { drawTitle(); return; }
   drawHUD();
+  if (state === 'play') drawTouchMenus();
   if (state === 'win') drawWin();
   if (state === 'gameover') {
     ctx.fillStyle = 'rgba(20,10,50,' + Math.min(0.6, goT) + ')'; ctx.fillRect(0, 0, W, H);
     const s = goT < 0.4 ? easeOut(goT / 0.4) : 1;
     ctx.save(); ctx.translate(W / 2, H / 2 - 60); ctx.scale(s, s); txt('GAME OVER', 0, 0, 84, '#ff4d6d', OUT); ctx.restore();
     if (goT > 0.6) txt(WORLD.gameOverLine, W / 2, H / 2 + 10, 22, '#fff', OUT);
-    if (goT > 1 && Math.floor(gT * 2) % 2 === 0) txt('Press ENTER to start again', W / 2, H / 2 + 70, 30, '#ffd23f', OUT);
+    if (goT > 1 && Math.floor(gT * 2) % 2 === 0) txt(ui('Press ENTER to start again', 'TAP to start again'), W / 2, H / 2 + 70, 30, '#ffd23f', OUT);
   }
   if (state === 'pause') {
     ctx.fillStyle = 'rgba(20,10,50,.5)'; ctx.fillRect(0, 0, W, H);
+    if (touchMode) { drawTouchMenus(); return; }
     txt('PAUSED', W / 2, H / 2 - 20, 70, '#ffd23f', OUT);
     txt('Press P or ENTER to continue', W / 2, H / 2 + 40, 24, '#fff', OUT);
     txt('F = full screen   ·   M = mute', W / 2, H / 2 + 80, 18, '#fff', OUT);
@@ -1271,5 +1281,6 @@ function frame(now) {
   }
   music();
   render();
+  drawTouch();
   requestAnimationFrame(frame);
 }
