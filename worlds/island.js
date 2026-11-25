@@ -707,6 +707,7 @@ registerWorld({
   },
   intro: {
     end: ISLAND_INTRO_END,
+    holds: [1.9, 5.55, 6.15, 7.75, 9.35, 10.45, 12.9], // dialogue waits for a press here (see sceneStep)
     update: updateIslandIntro, draw: drawIslandIntro, overlay: drawIslandIntroOverlay, heroX: islandHeroX,
     track: t => t < 1.9 ? 'calm' : (t > 2.5 && t < 11.2) ? 'boss' : null,
   },

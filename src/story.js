@@ -28,6 +28,7 @@ function drawPigeon(x, y, face, flying, letter) {
 
 const STORY_END = 13.2;
 const STORY = {
+  holds: [1.55, 2.95, 4.55, 7.85, 9.85, 11.55], // dialogue (and the letter) wait for a press here
   track(t) { const tr = WORLDS[0].tracks; return t < 9.6 ? tr.calm : tr.hero; },
   finish() { startWorld(worldIndex() + 1, true, true); },
   update(dt) {

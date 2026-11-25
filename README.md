@@ -45,7 +45,8 @@ as soon as you touch the screen: a d-pad on the left (◀ ▶ walk, ▼ duck / s
 | Hammer **slam** (in the air) | **J** or **↓** | △ / Y, or stick down |
 | Duck / crouch (on the ground) | **↓** (or S) | Stick down |
 | **Belly slide** (on ice) | run, then hold **↓** | run, then stick down |
-| Skip a cutscene | Enter / Space | ✕ / A or Start |
+| Next line in a cutscene | **Space** or H (touch: tap) | ✕ / A or ○ / B |
+| Skip a whole cutscene | Enter / Esc (touch: SKIP) | Start |
 | Pause | P / Esc | Start |
 | Full screen | F / double-click | — |
 | Mute | M | — |

@@ -13,6 +13,7 @@
 //          &touch=1 (touch controls; &pause=1 pauses) · #w=2&x=196&boss=hover|stuck&bx=200&t=1 (boss state) · &right=1 (hold →) · &slide=1 (then ↓) · &crouch=1
 const q = Object.fromEntries(location.hash.slice(1).split('&').map(p => p.split('=')));
 if ('touch' in q) touchMode = true; // &touch=1: show the touch controls
+if ('wait' in q) sceneWait = true; // &wait=1: a cutscene waiting for a press (shows the 'next' hint)
 const t = +(q.t || 0.5), steps = Math.round(t / STEP_DT);
 WORLD = WORLDS[(+(q.w || q.intro || q.win || 1)) - 1]; resetGame();
 if ('title' in q) { state = 'title'; titleT = t; }
