@@ -129,6 +129,18 @@ ok('reaching Drake wins the world',G.state==='win');
 ok('lullaby plays at the end',G.track==='calm');
 tap('Enter');fr(5);ok('ENTER after the ending returns to the title (last world)',G.state==='title');
 
+// --- respawning at the last checkpoint before a boss: no small bugs any more (both worlds)
+for(const [wi,early,last] of [[0,113,203],[1,139,178]]){
+  const die=()=>{P().inv=0;P().hearts=1;G.hurtPlayer(P().x+100);for(let i=0;i<60*3&&(P().dead||P().inv>1);i++)fr(1);};
+  const small=()=>G.L.enemies.filter(e=>!e.dead&&e!==G.boss).length;
+  G.startWorld(wi,false);fr(3);place(early-2);G.keys.ArrowRight=true;fr(30);clearKeys();die();
+  ok(`W${wi+1}: respawn at an earlier checkpoint brings the bugs back`,!P().dead&&small()>5,small());
+  place(last-2);P().inv=9;G.keys.ArrowRight=true;fr(50);clearKeys();
+  ok(`W${wi+1}: walked through the checkpoint before the boss`,G.L.cps.find(c=>Math.round((c.x-24)/TS)===last).active);
+  die();
+  ok(`W${wi+1}: respawn at the boss checkpoint: no small bugs, boss still there`,!P().dead&&small()===0&&G.L.enemies.includes(G.boss),small());
+}
+
 // --- story between worlds: World 1 win -> pigeon -> World 2 intro, lives carried over
 G.startWorld(0,false);fr(3);G.P.lives=5;G.boss.dead=true;G.boss.active=false;
 for(let y=0;y<12;y++){if(G.T(201,y)===6)G.setT(201,y,0);if(G.T(227,y)===6)G.setT(227,y,0);}

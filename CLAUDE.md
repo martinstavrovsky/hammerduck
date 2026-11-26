@@ -80,7 +80,7 @@ winUpdate?(dt, before), intro {end, holds, update, draw, overlay, heroX(t), trac
   Canvas resolution is capped at 2× devicePixelRatio. iOS `navigator.audioSession.type = 'playback'` so sound plays on silent.
 - **Hammer throw:** Thor-style boomerang; `THROW_RELOAD = 5` s from the catch; loaded at start and after a respawn.
 - **Lives:** 3 lives × 3 hearts; a heart at full hearts = +1 life (max 9); lives carry over to the next world; game over restarts the current world.
-- **On death:** respawn at the checkpoint; all bugs respawn; the boss resets to full health and sleeps until you re-enter the arena.
+- **On death:** respawn at the checkpoint; all bugs respawn (except at the last checkpoint before the boss: then no small bugs, only the boss); the boss resets to full health and sleeps until you re-enter the arena.
 - **World 1:** wasps swoop to head height (duck to dodge); armored beetles run 4.5× faster after the first hit; Big Bug boss 5 hp, 2× speed.
 - **World 2:** ice + belly slide (bowls over bugs), sinking floes, cracking ice, geysers, wind (crouch braces), icicles;
   snow fleas, ice spiders (duck under them), frost moths (snowballs can be batted back and home in on the thrower), roly-polys

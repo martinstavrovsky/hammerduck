@@ -566,6 +566,10 @@ function hurtPlayer(srcX) {
   popup(P.x + P.w / 2, P.y - 10, 'OUCH!', '#ff6b8b', 26, false);
   if (P.hearts <= 0) { P.dead = true; P.deadT = 0; P.vy = -760; P.rot = 0; P.lives--; SFX.die(); }
 }
+function atBossCheckpoint() {
+  const last = L.cps.reduce((a, c) => (!a || c.x > a.x ? c : a), null);
+  return !!(last && last.active && P.spawn && P.spawn.x === last.x + 30);
+}
 function respawn() {
   const s = P.spawn;
   P.h = STAND_H; P.crouch = false;
@@ -576,8 +580,9 @@ function respawn() {
     for (let y = 0; y < ROWS - 2; y++) if (T(WORLD.arena.L, y) === 6) setT(WORLD.arena.L, y, 0);
   }
   if (WORLD.onRespawn) WORLD.onRespawn();
-  // every bug comes back (the boss keeps its own state)
-  L.enemies = L.spawns.map(e => ({ ...e }));
+  // every bug comes back (the boss keeps its own state), except at the last checkpoint before the boss:
+  // the boss fight is hard enough, so no small bugs there any more
+  L.enemies = atBossCheckpoint() ? [] : L.spawns.map(e => ({ ...e }));
   if (boss) L.enemies.push(boss);
   camX = clamp(P.x - W * 0.4, 0, LW * TS - W);
 }
