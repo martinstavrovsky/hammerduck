@@ -453,7 +453,7 @@ function drawBigger(e) {
   const flash = e.inv > 0 && Math.floor(e.inv * 16) % 2 === 0;
   ctx.save(); ctx.translate(cx, by);
   if (e.dead) ctx.globalAlpha = clamp(1 - (e.deadT - 0.6) / 0.6, 0, 1);
-  if (stuck) { ctx.translate(0, -10); ctx.rotate(e.dir * 0.6); }
+  if (stuck) { ctx.beginPath(); ctx.rect(-400, -600, 800, 600); ctx.clip(); ctx.translate(0, -10); ctx.rotate(e.dir * 0.6); } // nothing pokes through the ice
   const k = 3.25;
   ctx.scale(e.dir * k, k);
   // wings
@@ -486,11 +486,31 @@ function drawBigger(e) {
   ctx.beginPath(); ctx.moveTo(19, -7.5); ctx.quadraticCurveTo(15, -10, 12, -6); ctx.quadraticCurveTo(11, -3, 14, -3); ctx.quadraticCurveTo(15, -6, 19, -6); ctx.closePath(); ctx.fill(); ctx.stroke();
   ctx.restore(); ctx.globalAlpha = 1;
   if (stuck) {
-    const hx = cx + e.dir * 60; // his head is buried in a big pile of snow
-    ctx.fillStyle = '#ffffff'; ctx.strokeStyle = '#9fb4e0'; ctx.lineWidth = 3;
-    ctx.beginPath(); ctx.ellipse(hx, by + 4, 56, 36, 0, 0, Math.PI * 2); ctx.fill();
-    ctx.beginPath(); ctx.ellipse(hx, by + 4, 56, 36, 0, Math.PI * 1.05, Math.PI * 1.95); ctx.stroke();
-    ctx.fillStyle = 'rgba(160,185,235,.5)'; ctx.beginPath(); ctx.ellipse(hx + 14, by - 6, 26, 8, 0, 0, Math.PI * 2); ctx.fill();
+    // his head is buried in a lumpy snowdrift sitting on the ice; the helmet horns poke out of it
+    const d = e.dir, hx = cx + d * 62, gy = by + 3, X = v => hx + d * v;
+    const mound = () => {
+      ctx.moveTo(X(-56), gy);
+      ctx.quadraticCurveTo(X(-54), by - 26, X(-30), by - 34);
+      ctx.quadraticCurveTo(X(-20), by - 60, X(2), by - 54);
+      ctx.quadraticCurveTo(X(24), by - 66, X(36), by - 40);
+      ctx.quadraticCurveTo(X(58), by - 30, X(56), gy);
+    };
+    ctx.fillStyle = '#ffffff'; ctx.beginPath(); mound(); ctx.closePath(); ctx.fill();
+    ctx.save(); ctx.beginPath(); mound(); ctx.closePath(); ctx.clip(); // soft blue shade along the bottom
+    ctx.fillStyle = 'rgba(160,185,235,.45)'; ctx.beginPath(); ctx.ellipse(hx, gy + 4, 64, 16, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+    ctx.strokeStyle = '#9fb4e0'; ctx.lineWidth = 3; ctx.lineJoin = 'round'; ctx.beginPath(); mound(); ctx.stroke();
+    ctx.fillStyle = 'rgba(160,185,235,.6)'; // little snow lumps
+    for (const [x, y, r] of [[-30, -16, 7], [14, -24, 6], [34, -10, 5]]) { ctx.beginPath(); ctx.arc(X(x), by + y, r, Math.PI, 0); ctx.fill(); }
+    if (e.st_t < 0.7) { // chunks of snow fly off on impact
+      const t = e.st_t;
+      for (let i = 0; i < 6; i++) {
+        const vx = (i - 2.5) * 70, vy = -330 - (i % 2) * 90, x = hx + vx * t, y = by - 40 + vy * t + 650 * t * t;
+        ctx.globalAlpha = clamp(1 - t / 0.7, 0, 1); ctx.fillStyle = '#fff'; ctx.strokeStyle = '#9fb4e0'; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.arc(x, y, 7 - (i % 3), 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+      }
+      ctx.globalAlpha = 1;
+    }
     for (let i = 0; i < 3; i++) { starPath(cx + Math.cos(gT * 5 + i * 2.1) * 50, e.y - 4 + Math.sin(gT * 5 + i * 2.1) * 10, 9, gT * 3); ctx.fillStyle = '#ffe14d'; ctx.fill(); ctx.strokeStyle = OUT; ctx.lineWidth = 2; ctx.stroke(); }
   }
 }
